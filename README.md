@@ -17,6 +17,10 @@ Commit Early & Commit Often!!!
 ## Project Name
 
 
+### Project Details
+
+
+### Team Information
 
 
 ## Using DCO to sign your commits
