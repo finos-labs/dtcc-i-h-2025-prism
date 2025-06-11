@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     
     # CORS Settings
     CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",           # React frontend
+        "http://localhost:3000",
+        "https://dtcc-hackathon-prism.vercel.app",           # React frontend
         "http://localhost:5173",           # Vite frontend 
         "http://localhost:8000", 
         "https://prism.blockconvey.com",

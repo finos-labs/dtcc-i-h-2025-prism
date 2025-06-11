@@ -38,7 +38,7 @@ export default function LoginPage() {
         // First token endpoint
 
         // Second token endpoint (localhost)
-        const response2 = await fetch("http://localhost:8000/auth/signin", {
+        const response2 = await fetch("https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/auth/signin", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       setError("");
-      const response2 = await fetch("http://localhost:8000/auth/signin", {
+      const response2 = await fetch("https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/auth/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
