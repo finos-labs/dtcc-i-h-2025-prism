@@ -19,7 +19,7 @@ import AuthCallback from "./components/AuthCallback";
 import ProfilePage from "./pages/ProfilePage";
 import DriftAnalysisPage from "./pages/DriftAnalysisPage";
 import RiskAssessmentPage from "./pages/RiskAssessmentPage";
-import ISO42001AuditPage from "./pages/ISO42001AuditPage";
+// import ISO42001AuditPage from "./pages/ISO42001AuditPage";
 // Import the correct OverviewPage if it exists elsewhere or remove if not needed
 // import OverviewPage from './pages/OverviewPage';
 
@@ -172,7 +172,6 @@ function App() {
               }
             />
 
-
             <Route
               path="/projects/:id/drift"
               element={
@@ -185,7 +184,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
 
             <Route
               path="/projects/:id/risk-assessment"
@@ -200,7 +198,7 @@ function App() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/iso"
               element={
                 <ProtectedRoute>
@@ -211,7 +209,7 @@ function App() {
                   </AppLayout>
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             {/* If OverviewPage exists, uncomment and use this route */}
             {/* <Route path="/projects/:id/overview" element={

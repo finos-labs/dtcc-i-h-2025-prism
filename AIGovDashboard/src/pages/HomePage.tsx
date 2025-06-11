@@ -182,7 +182,7 @@ const HomePage: React.FC = () => {
       }));
 
       setProjects(mappedProjects);
-      
+
       // Refresh audit data after projects are loaded
       fetchAudits();
     } catch (error) {
@@ -251,7 +251,7 @@ const HomePage: React.FC = () => {
         (project) => {
           // Convert project_id to number for comparison since audits and reports use numbers
           const projectIdNum = parseInt(project.project_id.toString());
-          
+
           const projectAudits = typedAudits.filter(
             (audit) => audit.project_id === projectIdNum
           );
@@ -275,14 +275,17 @@ const HomePage: React.FC = () => {
           );
           const pendingReports = completedAudits.length - projectReports.length;
 
-          console.log(`Project ${project.project_name} (ID: ${project.project_id}):`, {
-            total_audits: projectAudits.length,
-            completed_audits: completed,
-            failed_audits: failed,
-            running_audits: running,
-            reports_generated: projectReports.length,
-            pending_reports: Math.max(0, pendingReports)
-          });
+          console.log(
+            `Project ${project.project_name} (ID: ${project.project_id}):`,
+            {
+              total_audits: projectAudits.length,
+              completed_audits: completed,
+              failed_audits: failed,
+              running_audits: running,
+              reports_generated: projectReports.length,
+              pending_reports: Math.max(0, pendingReports),
+            }
+          );
 
           return {
             project_id: projectIdNum,
@@ -530,7 +533,11 @@ const HomePage: React.FC = () => {
                     {auditsLoading ? "—" : auditStats.total_completed || 0}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {auditsLoading ? "" : `Total: ${auditStats.total_audits || 0} | Failed: ${auditStats.total_failed || 0}`}
+                    {auditsLoading
+                      ? ""
+                      : `Total: ${auditStats.total_audits || 0} | Failed: ${
+                          auditStats.total_failed || 0
+                        }`}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -548,7 +555,6 @@ const HomePage: React.FC = () => {
                   <p className="text-3xl font-bold text-gray-900">
                     {auditsLoading ? "—" : auditStats.total_reports || 0}
                   </p>
-                  
                 </div>
                 <div className="h-12 w-12 bg-purple-50 rounded-xl flex items-center justify-center">
                   <FileText className="h-6 w-6 text-purple-600" />
@@ -714,7 +720,8 @@ const HomePage: React.FC = () => {
               ) : (
                 filteredProjects.map((project) => {
                   const projectSummary = projectAuditSummaries.find(
-                    (p) => p.project_id.toString() === project.project_id.toString()
+                    (p) =>
+                      p.project_id.toString() === project.project_id.toString()
                   );
                   return (
                     <div
@@ -847,7 +854,7 @@ const HomePage: React.FC = () => {
                                     Reports
                                   </div>
                                 </div>
-                                
+
                                 {projectSummary.failed_audits > 0 && (
                                   <div className="text-center">
                                     <div className="text-sm font-medium text-red-600">
@@ -863,6 +870,8 @@ const HomePage: React.FC = () => {
                                     className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${
                                       projectSummary.has_failures
                                         ? "bg-red-100 text-red-700 border border-red-200"
+                                        : projectSummary.reports_generated === 2
+                                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                                         : projectSummary.pending_reports > 0
                                         ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
                                         : projectSummary.total_audits > 0
@@ -874,6 +883,12 @@ const HomePage: React.FC = () => {
                                       <>
                                         <XCircle className="h-3 w-3 mr-1" />
                                         Issues
+                                      </>
+                                    ) : projectSummary.reports_generated ===
+                                      2 ? (
+                                      <>
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Report generation complete
                                       </>
                                     ) : projectSummary.pending_reports > 0 ? (
                                       <>
