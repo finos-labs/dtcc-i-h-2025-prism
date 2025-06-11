@@ -401,14 +401,201 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
     }
   };
 
+  const runFreshAnalysis = async () => {
+    // Get project name from project details or use default
+    const projectName = projectDetails?.project_name || "AI System";
+    
+    // Generate structured AI recommendations using Gemini API
+    let geminiRecommendations = "";
+    
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyD6L9OZMjl5CMuwcezKH6dwZPF4oB5EKv8`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are an AI Risk Assessment expert. Analyze each user response and create unique, specific recommendations for EVERY question. Project: ${projectName}
+
+CRITICAL INSTRUCTIONS:
+- Analyze EACH response individually and provide COMPLETELY UNIQUE recommendations
+- Do NOT repeat generic advice - each recommendation must be specific to that question and user's answer
+- Cover ALL sections, not just a few
+- If user says "Yes" but is vague, ask for more specificity
+- If user says "No", provide step-by-step implementation
+- If user mentions specific tools/processes, reference them directly in recommendations
+
+USER RESPONSES TO ANALYZE:
+
+${Object.entries(assessmentData).filter(([key, value]) => value).map(([key, value]) => {
+  const sectionMapping: Record<string, { section: string; question: string }> = {
+    // Section 1: AI System Information
+    aiSystemDescription: { section: "AI System Information", question: "What is your AI system description?" },
+    aiSystemPurpose: { section: "AI System Information", question: "What is the purpose of your AI system?" },
+    deploymentMethod: { section: "AI System Information", question: "What is your deployment method?" },
+    deploymentRequirements: { section: "AI System Information", question: "What are your deployment requirements?" },
+    
+    // Section 2: Human and Stakeholder Involvement  
+    rolesDocumented: { section: "Human and Stakeholder Involvement", question: "Are roles and responsibilities for AI governance clearly documented?" },
+    personnelTrained: { section: "Human and Stakeholder Involvement", question: "Is personnel trained on AI ethics, bias, and risk management?" },
+    humanInvolvement: { section: "Human and Stakeholder Involvement", question: "What level of human involvement exists in AI decision-making?" },
+    biasTraining: { section: "Human and Stakeholder Involvement", question: "Has bias awareness and mitigation training been provided?" },
+    humanIntervention: { section: "Human and Stakeholder Involvement", question: "Can humans intervene in AI system decisions when needed?" },
+    humanOverride: { section: "Human and Stakeholder Involvement", question: "Can humans override AI system decisions completely?" },
+    
+    // Section 3: Safety and Reliability
+    riskLevels: { section: "Safety and Reliability", question: "What risk levels have been identified and assessed?" },
+    threatsIdentified: { section: "Safety and Reliability", question: "What potential threats and vulnerabilities have been identified?" },
+    maliciousUseAssessed: { section: "Safety and Reliability", question: "Has the potential for malicious use been assessed?" },
+    
+    // Section 4: Privacy and Data Governance
+    personalInfoUsed: { section: "Privacy and Data Governance", question: "Is personal information used by the AI system?" },
+    personalInfoCategories: { section: "Privacy and Data Governance", question: "What categories of personal information are processed?" },
+    privacyRegulations: { section: "Privacy and Data Governance", question: "Which privacy regulations apply to your system?" },
+    privacyRiskAssessment: { section: "Privacy and Data Governance", question: "Has a privacy risk assessment been conducted?" },
+    privacyByDesign: { section: "Privacy and Data Governance", question: "Are privacy-by-design principles implemented?" },
+    individualsInformed: { section: "Privacy and Data Governance", question: "Are individuals informed about how their data is used?" },
+    privacyRights: { section: "Privacy and Data Governance", question: "How are individual privacy rights handled and respected?" },
+    dataQuality: { section: "Privacy and Data Governance", question: "How is data quality and accuracy ensured?" },
+    thirdPartyRisks: { section: "Privacy and Data Governance", question: "How are third-party data sharing risks managed?" }
+  };
+  
+  const mapping = sectionMapping[key] || { section: "Additional", question: key };
+  return `
+SECTION: ${mapping.section}
+QUESTION: ${mapping.question}
+USER'S ACTUAL RESPONSE: "${value}"
+
+REQUIRED ANALYSIS FOR THIS SPECIFIC QUESTION:
+1. What does this response tell us about their current implementation?
+2. What specific gaps or strengths are revealed?
+3. What unique risks apply to this particular area?
+4. What specific next steps should they take based on what they wrote?
+`;
+}).join('\n')}
+
+AUTO-COMPLETED SECTIONS (Include these with standard recommendations):
+
+Section 3: Valid and Reliable AI
+Description: This section assesses measures to ensure the AI system is developed for the good of society, environment, and community
+Status: Analysis completed - Standard controls implemented
+Recommendation: Maintain regular impact assessments and ensure compliance with all applicable regulations
+
+Section 5: Secure and Resilient AI
+Description: This section assesses measures to ensure system security and capability to respond to incidents and operate continuously
+Status: Analysis completed - Standard controls implemented  
+Recommendation: Implement comprehensive security testing including red-team exercises and continuous vulnerability assessments
+
+Section 6: Explainable and Interpretable AI
+Description: This section assesses measures to ensure information requirements for explainable AI are maintained and decisions are interpreted as expected
+Status: Analysis completed - Standard controls implemented
+Recommendation: Enhance traceability mechanisms and implement comprehensive logging for all decisions
+
+Section 8: Fairness and Unbiased AI
+Description: This section assesses measures to ensure the AI system is free from bias, inclusive, and diverse
+Status: Analysis completed - Standard controls implemented
+Recommendation: Implement comprehensive bias testing and monitoring with diverse representation in development teams
+
+Section 9: Transparent and Accountable AI
+Description: This section assesses measures to provide sufficient information to relevant stakeholders at any point of the AI lifecycle
+Status: Analysis completed - Standard controls implemented
+Recommendation: Establish clear communication protocols and ensure users are properly informed about AI interactions
+
+Section 10: AI Accountability
+Description: This section ensures the organization has risk management mechanisms to effectively manage identified AI risks
+Status: Analysis completed - Standard controls implemented
+Recommendation: Implement comprehensive risk management framework with regular audits and independent third-party assessments
+
+NOW GENERATE REPORT IN THIS EXACT FORMAT:
+
+Section 1: AI System Information
+Question 1: What is your AI system description?
+User Answer: [Their exact response]
+Analysis: [Detailed analysis of their specific response - what it reveals about maturity, gaps, strengths]
+Recommendation: [Unique, specific recommendation based only on this response - no generic advice]
+
+Question 2: What is the purpose of your AI system?
+User Answer: [Their exact response]  
+Analysis: [Different analysis specific to purpose and use case]
+Recommendation: [Completely different recommendation focused on purpose-specific risks]
+
+[Continue for ALL questions in AI System Information]
+
+Section 2: Human and Stakeholder Involvement
+Question 1: Are roles and responsibilities for AI governance clearly documented?
+User Answer: [Their exact response]
+Analysis: [Analyze their governance maturity from this response]
+Recommendation: [Specific governance improvement recommendations]
+
+[Continue for ALL questions in Human and Stakeholder Involvement]
+
+Section 3: Safety and Reliability  
+[Continue with ALL safety questions]
+
+Section 4: Privacy and Data Governance
+[Continue with ALL privacy questions]
+
+MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
+            }]
+          }]
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        geminiRecommendations = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      }
+    } catch (apiError) {
+      console.log('AI analysis unavailable, using structured fallback');
+      geminiRecommendations = "AI analysis temporarily unavailable. Please review your responses and ensure all sections are complete.";
+    }
+
+    // Store analysis results in localStorage
+    const analysisResults = {
+      projectId: id,
+      projectName,
+      assessmentData,
+      aiRecommendations: geminiRecommendations,
+      timestamp: new Date().toISOString(),
+      progress: calculateProgress(),
+      riskLevel: getRiskLevel().level
+    };
+
+    // Store in localStorage with project-specific key
+    localStorage.setItem(`riskAssessment_${id}`, JSON.stringify(analysisResults));
+    
+    // Also store in a general list for easy retrieval
+    const existingAnalyses = JSON.parse(localStorage.getItem('riskAssessmentAnalyses') || '[]');
+    const updatedAnalyses = existingAnalyses.filter((analysis: any) => analysis.projectId !== id);
+    updatedAnalyses.push({
+      projectId: id,
+      projectName,
+      timestamp: new Date().toISOString(),
+      progress: calculateProgress(),
+      riskLevel: getRiskLevel().level
+    });
+    localStorage.setItem('riskAssessmentAnalyses', JSON.stringify(updatedAnalyses));
+
+    // Also set the flags that ReportPage.tsx expects for compatibility
+    localStorage.setItem(`riskAssessmentGenerated_${id}`, "true");
+    localStorage.setItem(`riskAssessmentTimestamp_${id}`, new Date().toISOString());
+
+    setAnalysisCompleted(true);
+  };
+
   const handleDownloadReport = async () => {
     try {
       setLoading(true);
       
-      // Retrieve stored analysis from localStorage
+      // Always run fresh AI analysis before downloading
+      await runFreshAnalysis();
+      
+      // Retrieve the fresh analysis from localStorage
       const storedAnalysis = localStorage.getItem(`riskAssessment_${id}`);
       if (!storedAnalysis) {
-        alert('No analysis found. Please run the AI Risk Assessment analysis first.');
+        alert('Failed to generate analysis. Please try again.');
         return;
       }
 
@@ -995,8 +1182,35 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
         }
       });
 
-      // Save the PDF
-      pdf.save(`AI_Risk_Assessment_Report_${projectName.replace(/\s+/g, '_')}.pdf`);
+      // Generate PDF as blob for storage
+      const pdfBlob = pdf.output('blob');
+      const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+      const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfArrayBuffer)));
+      
+      // Store PDF data in localStorage with analysis
+      const updatedAnalysisData = {
+        ...analysisData,
+        pdfData: pdfBase64,
+        pdfGeneratedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`riskAssessment_${id}`, JSON.stringify(updatedAnalysisData));
+      
+      // Also store in reports list for easy access
+      const existingReports = JSON.parse(localStorage.getItem('riskAssessmentReports') || '[]');
+      const updatedReports = existingReports.filter((report: any) => report.projectId !== id);
+      updatedReports.push({
+        projectId: id,
+        projectName,
+        timestamp: new Date().toISOString(),
+        progress: calculateProgress(),
+        riskLevel: getRiskLevel().level,
+        pdfAvailable: true
+      });
+      localStorage.setItem('riskAssessmentReports', JSON.stringify(updatedReports));
+      
+      // Don't auto-download, just confirm storage
+      alert('✅ AI Risk Assessment analysis completed and saved to storage! You can download the report from the Reports page.');
       
     } catch (error) {
       console.error('Error generating PDF report:', error);
@@ -1338,14 +1552,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
               {projectDetails?.project_name || `Project ${id}`} • Comprehensive compliance evaluation
             </p>
           </div>
-          <Button
-            onClick={handleAnalyzeAssessment}
-            disabled={loading}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white flex items-center px-6 py-2 rounded-lg font-medium transition-all duration-200"
-          >
-            <BarChart3 className="w-4 h-4 mr-2" />
-            {loading ? 'Analyzing...' : 'Run AI Analysis'}
-          </Button>
+
         </div>
 
                  {/* Dashboard Cards */}
@@ -1539,7 +1746,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
                 "Are personnel provided with the necessary skills, training, and resources needed in order to fulfill their assigned roles and responsibilities?",
                 "personnelTrained",
                 [
-                  { value: "yes", label: "Yes [Include a description of the relevant trainings and resources provided]" },
+                  { value: "yes", label: "Yes " },
                   { value: "no", label: "No" },
                   { value: "na", label: "N/A" }
                 ]
@@ -1560,7 +1767,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
                 "Are the relevant personnel dealing with AI systems properly trained to interpret AI model output and decisions as well as to detect and manage bias in data?",
                 "biasTraining",
                 [
-                  { value: "yes", label: "Yes [Include a description of the trainings provided]" },
+                  { value: "yes", label: "Yes" },
                   { value: "no", label: "No" },
                   { value: "na", label: "N/A" }
                 ]
@@ -1581,7 +1788,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
                 "Do human reviewers have the expertise and authority to override decisions made by the AI and modify them to the appropriate outcome?",
                 "humanOverride",
                 [
-                  { value: "yes", label: "Yes [Include a description of the process or mechanism in place]" },
+                  { value: "yes", label: "Yes " },
                   { value: "no", label: "No" },
                   { value: "na", label: "N/A" }
                 ]
@@ -1930,14 +2137,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
             Save Progress
           </Button>
           
-          <Button
-            onClick={handleAnalyzeAssessment}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-            disabled={loading}
-          >
-            <BarChart3 className="w-4 h-4" />
-            {loading ? 'Analyzing...' : 'Run AI Analysis'}
-          </Button>
+        
           
           <Button
             onClick={handleDownloadReport}
@@ -1945,7 +2145,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
             disabled={loading}
           >
             <Download className="w-4 h-4" />
-            {loading ? 'Generating...' : 'Download Report'}
+            {loading ? 'Generating...' : 'Generate & Save Report'}
           </Button>
         </div>
         
