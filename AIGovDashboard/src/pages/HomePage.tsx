@@ -97,23 +97,12 @@ interface AuditStats {
   failed_audits: Audit[];
 }
 
-// Dummy projects that will always be shown
-const dummyProjects: Project[] = [
-  {
-    project_id: "dummy-1",
-    project_name: "Investment Portfolio Analysis",
-    description: "AI-powered investment strategy and risk assessment system",
-    project_type: "generic",
-    user_id: "dummy",
-  },
-];
-
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [projects, setProjects] = useState<Project[]>(dummyProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -181,20 +170,11 @@ const HomePage: React.FC = () => {
         localStorage.setItem("projectId", data[0].project_id);
       }
 
-      // Merge database projects with dummy projects
-      // Filter out any database projects that have the same name as dummy projects
-      const dummyNames = new Set(
-        dummyProjects.map((p) => p.project_name.toLowerCase())
-      );
-
       // Properly type the data as DbProject[]
       const typedData = (data as DbProject[]) || [];
-      const filteredData = typedData.filter(
-        (p) => !dummyNames.has(p.project_name.toLowerCase())
-      );
 
       // Map the database results to match our Project interface (user_uuid -> user_id)
-      const mappedProjects: Project[] = filteredData.map((project) => ({
+      const mappedProjects: Project[] = typedData.map((project) => ({
         project_id: project.project_id,
         project_name: project.project_name,
         description: project.description,
@@ -202,14 +182,9 @@ const HomePage: React.FC = () => {
         user_id: project.user_uuid, // Map user_uuid to user_id
       }));
 
-      // Combine projects with user's projects at the top, followed by dummy projects
-      const allProjects: Project[] = [...mappedProjects, ...dummyProjects];
-
-      setProjects(allProjects);
+      setProjects(mappedProjects);
     } catch (error) {
       console.error("Error fetching projects:", error);
-      // Keep dummy projects on error
-      setProjects(dummyProjects);
     } finally {
       setLoading(false);
     }
@@ -474,8 +449,8 @@ const HomePage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center space-x-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Prism Dashboard DTCC Hackathon
+                <h1 className="text-3xl font-medium text-gray-900">
+                  Prism Dashboard DTCC <b>X</b> Hackathon
                 </h1>
               </div>
               <p className="text-gray-600 font-medium">
@@ -533,7 +508,7 @@ const HomePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">
-                    Reports Generated
+                    Complete Analysis Reports Generated
                   </p>
                   <p className="text-3xl font-bold text-gray-900">
                     {auditsLoading ? "—" : auditStats.total_reports}
@@ -693,7 +668,7 @@ const HomePage: React.FC = () => {
                   {!searchQuery && (
                     <button
                       onClick={() => navigate("/projects/new")}
-                      className="inline-flex items-center px-6 py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors"
+                      className="inline-flex items-center px-6 py-3 bg-emerald-400 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Project
@@ -808,11 +783,6 @@ const HomePage: React.FC = () => {
                                     ? "LLM"
                                     : "Generic AI"}
                                 </span>
-                                {project.user_id === "dummy" && (
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
-                                    Demo
-                                  </span>
-                                )}
                               </div>
                               <p className="text-gray-600 truncate">
                                 {project.description}
@@ -889,23 +859,21 @@ const HomePage: React.FC = () => {
                           {/* Actions */}
                           <div className="flex items-center space-x-2">
                             <ChevronRight className="h-5 w-5 text-gray-400" />
-                            {project.user_id !== "dummy" && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  confirmDeleteProject(
-                                    e,
-                                    project.project_id,
-                                    project.project_name
-                                  );
-                                }}
-                                className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Delete project"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                confirmDeleteProject(
+                                  e,
+                                  project.project_id,
+                                  project.project_name
+                                );
+                              }}
+                              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete project"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
                       </Link>

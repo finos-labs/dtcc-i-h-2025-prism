@@ -1,12 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Clock, Upload, Info } from 'lucide-react';
-import { Button } from '../components/ui/button';
 import { Breadcrumb } from '../components/ui/breadcrumb';
-import AppLayout from '../components/AppLayout';
-import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import UploadModal from '../components/UploadModal';
 import axios from 'axios';
 

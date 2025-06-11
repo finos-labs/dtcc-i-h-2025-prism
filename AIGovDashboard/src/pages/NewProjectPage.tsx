@@ -12,8 +12,7 @@ const projectTypes = [
  
   {
     id: "generic",
-    name: "Generic AI Project",
-    description: "Traditional machine learning models",
+    name: "Supervised machine learning model",
     icon: Activity,
   },
 ];
@@ -202,9 +201,7 @@ export default function NewProjectPage() {
                       <h3 className="font-medium text-gray-900 text-sm">
                         {type.name}
                       </h3>
-                      <p className="text-xs text-gray-500">
-                        {type.description}
-                      </p>
+                     
                     </div>
                   </div>
                 ))}

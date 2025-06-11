@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import axios from 'axios';
 
 interface ModelData {
   model_id: string;
@@ -99,6 +100,7 @@ const RiskAssessmentPage: React.FC = () => {
   });
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([1])); // Start with section 1 expanded
   const [analysisCompleted, setAnalysisCompleted] = useState<boolean>(false);
+  const [autoSectionsCompleted, setAutoSectionsCompleted] = useState<Set<number>>(new Set()); // Track which auto sections are actually completed
 
   useEffect(() => {
     if (!isDummyProject && id) {
@@ -108,6 +110,9 @@ const RiskAssessmentPage: React.FC = () => {
     // Check if analysis has been completed
     const storedAnalysis = localStorage.getItem(`riskAssessment_${id}`);
     setAnalysisCompleted(!!storedAnalysis);
+    
+    // Check auto-sections completion status
+    checkAutoSectionsCompletion();
   }, [id, isDummyProject]);
 
   const fetchProjectData = async () => {
@@ -144,6 +149,44 @@ const RiskAssessmentPage: React.FC = () => {
       console.error("Failed to fetch project data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAutoSectionsCompletion = async () => {
+    try {
+      // Get token from localStorage (similar to ProjectOverviewPage)
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        console.log('No access token found');
+        return;
+      }
+
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      };
+
+      // Check if models/data exist for this project
+      try {
+        const modelsResponse = await axios.get(`http://localhost:8000/ml/${id}/models/list`, config);
+        
+        // If we get a successful response with data, mark auto sections as completed
+        if (modelsResponse.data && modelsResponse.data.length > 0) {
+          setAutoSectionsCompleted(new Set([3, 5, 6, 8, 9, 10]));
+        } else {
+          // No data, keep auto sections as not completed
+          setAutoSectionsCompleted(new Set());
+        }
+      } catch (apiError) {
+        console.log('Models API not available or no data:', apiError);
+        // API call failed or returned no data, keep auto sections as not completed
+        setAutoSectionsCompleted(new Set());
+      }
+    } catch (error) {
+      console.error('Error checking auto sections completion:', error);
+      setAutoSectionsCompleted(new Set());
     }
   };
 
@@ -1014,9 +1057,9 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
       });
     });
 
-    // Add auto-completed sections
-    completedFields += autoCompletedSections.length * 1; // Each auto section counts as 1
-    totalFields += autoCompletedSections.length * 1;
+    // Add auto-completed sections (only count those that are actually completed)
+    completedFields += autoSectionsCompleted.size; // Count only actually completed auto sections
+    totalFields += autoCompletedSections.length; // Total possible auto sections
 
     return Math.round((completedFields / totalFields) * 100);
   };
@@ -1038,7 +1081,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
   };
 
   const getCompletedSections = () => {
-    let completed = autoCompletedSections.length; // Auto-completed sections
+    let completed = autoSectionsCompleted.size; // Only actually completed auto sections
     
     userSections.forEach(section => {
       const allFieldsCompleted = section.fields.every(field => 
@@ -1155,6 +1198,57 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
           <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
             <span className="text-sm text-green-800">{item}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderIncompleteSection = (title: string, description: string, items: string[]) => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <p className="text-sm text-gray-600 mb-4">{description}</p>
+      <div className="space-y-3">
+        {items.map((item, index) => (
+          <div key={index} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {item.replace('✓ ', '')}
+            </label>
+            <div className="flex items-center space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`auto_section_${title.replace(/\s+/g, '_')}_${index}`}
+                  value="yes"
+                  className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                  disabled
+                />
+                <span className="text-sm text-gray-500">Yes</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`auto_section_${title.replace(/\s+/g, '_')}_${index}`}
+                  value="no"
+                  className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                  disabled
+                />
+                <span className="text-sm text-gray-500">No</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`auto_section_${title.replace(/\s+/g, '_')}_${index}`}
+                  value="na"
+                  className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                  disabled
+                />
+                <span className="text-sm text-gray-500">N/A</span>
+              </label>
+            </div>
+            <div className="text-xs text-gray-500 bg-yellow-50 border border-yellow-200 rounded p-2">
+              This section will be auto-completed once model is evaluated
+            </div>
           </div>
         ))}
       </div>
@@ -1502,16 +1596,29 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
           {renderCollapsibleSection(
             3,
             "Valid and Reliable AI",
-            renderCompletedSection(
-              "This section is intended to assess the measures in place to ensure that the AI system is developed for the good of society, the environment, and the community.",
-              [
-                "✓ Mechanisms in place to identify and assess the impacts of the AI system on individuals, the environment, communities, and society",
-                "✓ Potential negative impacts re-assessed if there are significant changes to the AI system in all stages of the AI lifecycle",
-                "✓ Identified potential negative impacts used to inform and implement mitigating measures throughout the AI lifecycle",
-                "✓ All existing regulations and guidelines that may affect the AI system have been identified"
-              ]
-            ),
-            true
+            autoSectionsCompleted.has(3) ? 
+              renderCompletedSection(
+                "This section is intended to assess the measures in place to ensure that the AI system is developed for the good of society, the environment, and the community.",
+                [
+                  "✓ Mechanisms in place to identify and assess the impacts of the AI system on individuals, the environment, communities, and society",
+                  "✓ Potential negative impacts re-assessed if there are significant changes to the AI system in all stages of the AI lifecycle",
+                  "✓ Identified potential negative impacts used to inform and implement mitigating measures throughout the AI lifecycle",
+                  "✓ All existing regulations and guidelines that may affect the AI system have been identified"
+                ]
+              ) :
+              renderIncompleteSection(
+                "Valid and Reliable AI",
+                "This section is intended to assess the measures in place to ensure that the AI system is developed for the good of society, the environment, and the community.",
+                [
+                  "Mechanisms in place to identify and assess the impacts of the AI system on individuals, the environment, communities, and society",
+                  "Potential negative impacts re-assessed if there are significant changes to the AI system in all stages of the AI lifecycle",
+                  "Identified potential negative impacts used to inform and implement mitigating measures throughout the AI lifecycle",
+                  "All existing regulations and guidelines that may affect the AI system have been identified"
+                ]
+              ),
+            autoSectionsCompleted.has(3),
+            autoSectionsCompleted.has(3) ? 4 : 0,
+            4
           )}
 
           {/* Section 4: Safety and Reliability of AI */}
@@ -1559,47 +1666,72 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
           {renderCollapsibleSection(
             5,
             "Secure and Resilient AI",
-            renderCompletedSection(
-              "This section is intended to assess the measures in place to ensure the security of the AI system and its capability to respond to incidents and operate continuously.",
-              [
-                "✓ Mechanisms in place to assess vulnerabilities in terms of security and resiliency across the AI lifecycle",
-                "✓ Red-team exercises used to actively test the system under adversarial or stress conditions",
-                "✓ Processes in place to modify system security and countermeasures to increase robustness",
-                "✓ Processes in place to respond to incidents related to AI systems",
-                "✓ Procedures and relevant performance metrics in place to monitor AI system's accuracy",
-                "✓ Processes in place to establish and track security tests and metrics"
-              ]
-            ),
-            true
+            autoSectionsCompleted.has(5) ?
+              renderCompletedSection(
+                "This section is intended to assess the measures in place to ensure the security of the AI system and its capability to respond to incidents and operate continuously.",
+                [
+                  "✓ Mechanisms in place to assess vulnerabilities in terms of security and resiliency across the AI lifecycle",
+                  "✓ Red-team exercises used to actively test the system under adversarial or stress conditions",
+                  "✓ Processes in place to modify system security and countermeasures to increase robustness",
+                  "✓ Processes in place to respond to incidents related to AI systems",
+                  "✓ Procedures and relevant performance metrics in place to monitor AI system's accuracy",
+                  "✓ Processes in place to establish and track security tests and metrics"
+                ]
+              ) :
+              renderIncompleteSection(
+                "Secure and Resilient AI",
+                "This section is intended to assess the measures in place to ensure the security of the AI system and its capability to respond to incidents and operate continuously.",
+                [
+                  "Mechanisms in place to assess vulnerabilities in terms of security and resiliency across the AI lifecycle",
+                  "Red-team exercises used to actively test the system under adversarial or stress conditions",
+                  "Processes in place to modify system security and countermeasures to increase robustness",
+                  "Processes in place to respond to incidents related to AI systems",
+                  "Procedures and relevant performance metrics in place to monitor AI system's accuracy",
+                  "Processes in place to establish and track security tests and metrics"
+                ]
+              ),
+            autoSectionsCompleted.has(5),
+            autoSectionsCompleted.has(5) ? 6 : 0,
+            6
           )}
 
           {/* Section 6: Explainable and Interpretable AI */}
           {renderCollapsibleSection(
             6,
             "Explainable and Interpretable AI",
-            renderCompletedSection(
-              "This section is intended to assess the measures in place to ensure that information requirements for explainable AI are maintained, and AI decisions are interpreted as expected.",
-              [
-                "✓ Measures in place to address the traceability of the AI system during its entire lifecycle",
-                "✓ Measures in place to continuously assess the quality of the input data to the AI system",
-                "✓ Data used by the AI system is traceable to make certain decisions or recommendations",
-                "✓ AI models or rules are traceable that led to the decisions or recommendations",
-                "✓ Adequate logging practices in place to record the decisions or recommendations",
-                "✓ Explanations on the decision of the AI system provided to relevant users and stakeholders"
-              ]
-            ),
-            true
+            autoSectionsCompleted.has(6) ?
+              renderCompletedSection(
+                "This section is intended to assess the measures in place to ensure that information requirements for explainable AI are maintained, and AI decisions are interpreted as expected.",
+                [
+                  "✓ Measures in place to address the traceability of the AI system during its entire lifecycle",
+                  "✓ Measures in place to continuously assess the quality of the input data to the AI system",
+                  "✓ Data used by the AI system is traceable to make certain decisions or recommendations",
+                  "✓ AI models or rules are traceable that led to the decisions or recommendations",
+                  "✓ Adequate logging practices in place to record the decisions or recommendations",
+                  "✓ Explanations on the decision of the AI system provided to relevant users and stakeholders"
+                ]
+              ) :
+              renderIncompleteSection(
+                "Explainable and Interpretable AI",
+                "This section is intended to assess the measures in place to ensure that information requirements for explainable AI are maintained, and AI decisions are interpreted as expected.",
+                [
+                  "Measures in place to address the traceability of the AI system during its entire lifecycle",
+                  "Measures in place to continuously assess the quality of the input data to the AI system",
+                  "Data used by the AI system is traceable to make certain decisions or recommendations",
+                  "AI models or rules are traceable that led to the decisions or recommendations",
+                  "Adequate logging practices in place to record the decisions or recommendations",
+                  "Explanations on the decision of the AI system provided to relevant users and stakeholders"
+                ]
+              ),
+            autoSectionsCompleted.has(6),
+            autoSectionsCompleted.has(6) ? 6 : 0,
+            6
           )}
 
           {/* Section 7: Privacy and Data Governance */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
-                <span className="text-teal-600 font-semibold">7</span>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Privacy and Data Governance</h2>
-            </div>
-            
+          {renderCollapsibleSection(
+            7,
+            "Privacy and Data Governance",
             <div className="space-y-6">
               {renderRadioGroup(
                 "Is the AI system being trained, or was it developed, by using or processing personal information?",
@@ -1686,71 +1818,104 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
                   { value: "na", label: "N/A" }
                 ]
               )}
-            </div>
-          </div>
+            </div>,
+            false,
+            userSections[3].fields.filter(field => assessmentData[field as keyof AssessmentData]).length,
+            userSections[3].fields.length
+          )}
 
           {/* Section 8: Fairness and Unbiased AI */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Fairness and Unbiased AI</h2>
-            </div>
-            
-            {renderCompletedSection(
-              "This section is intended to assess the measures in place to ensure that the AI system is free from bias, inclusive, and diverse.",
-              [
-                "✓ Strategy established to avoid creating or reinforcing unfair bias in the AI system",
-                "✓ Diversity and representativeness of end-users considered in the data used for the AI system",
-                "✓ Demographics of those involved in design and development documented to capture potential biases",
-                "✓ AI actors are aware of the possible bias they can inject into the design and development",
-                "✓ Mechanisms in place to test and monitor the AI system for potential biases",
-                "✓ Identified issues related to bias, discrimination, and poor performance are mitigated"
-              ]
-            )}
-          </div>
+          {renderCollapsibleSection(
+            8,
+            "Fairness and Unbiased AI",
+            autoSectionsCompleted.has(8) ?
+              renderCompletedSection(
+                "This section is intended to assess the measures in place to ensure that the AI system is free from bias, inclusive, and diverse.",
+                [
+                  "✓ Strategy established to avoid creating or reinforcing unfair bias in the AI system",
+                  "✓ Diversity and representativeness of end-users considered in the data used for the AI system",
+                  "✓ Demographics of those involved in design and development documented to capture potential biases",
+                  "✓ AI actors are aware of the possible bias they can inject into the design and development",
+                  "✓ Mechanisms in place to test and monitor the AI system for potential biases",
+                  "✓ Identified issues related to bias, discrimination, and poor performance are mitigated"
+                ]
+              ) :
+              renderIncompleteSection(
+                "Fairness and Unbiased AI",
+                "This section is intended to assess the measures in place to ensure that the AI system is free from bias, inclusive, and diverse.",
+                [
+                  "Strategy established to avoid creating or reinforcing unfair bias in the AI system",
+                  "Diversity and representativeness of end-users considered in the data used for the AI system",
+                  "Demographics of those involved in design and development documented to capture potential biases",
+                  "AI actors are aware of the possible bias they can inject into the design and development",
+                  "Mechanisms in place to test and monitor the AI system for potential biases",
+                  "Identified issues related to bias, discrimination, and poor performance are mitigated"
+                ]
+              ),
+            autoSectionsCompleted.has(8),
+            autoSectionsCompleted.has(8) ? 6 : 0,
+            6
+          )}
 
           {/* Section 9: Transparent and Accountable AI */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Transparent and Accountable AI</h2>
-            </div>
-            
-            {renderCompletedSection(
-              "This section is intended to assess the measures in place to provide sufficient and appropriate information to relevant stakeholders, at any point of the AI lifecycle.",
-              [
-                "✓ Sufficient information provided to relevant AI actors to assist in making informed decisions",
-                "✓ Type of information accessible about the AI lifecycle is limited to what is relevant and sufficient",
-                "✓ End users are aware that they are interacting with an AI system and not a human",
-                "✓ End-users informed of the purpose, criteria, and limitations of the decisions generated",
-                "✓ End-users informed of the benefits of the AI system",
-                "✓ Mechanism in place to regularly communicate with external stakeholders"
-              ]
-            )}
-          </div>
+          {renderCollapsibleSection(
+            9,
+            "Transparent and Accountable AI",
+            autoSectionsCompleted.has(9) ?
+              renderCompletedSection(
+                "This section is intended to assess the measures in place to provide sufficient and appropriate information to relevant stakeholders, at any point of the AI lifecycle.",
+                [
+                  "✓ Sufficient information provided to relevant AI actors to assist in making informed decisions",
+                  "✓ Type of information accessible about the AI lifecycle is limited to what is relevant and sufficient",
+                  "✓ End users are aware that they are interacting with an AI system and not a human",
+                  "✓ End-users informed of the purpose, criteria, and limitations of the decisions generated",
+                  "✓ End-users informed of the benefits of the AI system",
+                  "✓ Mechanism in place to regularly communicate with external stakeholders"
+                ]
+              ) :
+              renderIncompleteSection(
+                "Transparent and Accountable AI",
+                "This section is intended to assess the measures in place to provide sufficient and appropriate information to relevant stakeholders, at any point of the AI lifecycle.",
+                [
+                  "Sufficient information provided to relevant AI actors to assist in making informed decisions",
+                  "Type of information accessible about the AI lifecycle is limited to what is relevant and sufficient",
+                  "End users are aware that they are interacting with an AI system and not a human",
+                  "End-users informed of the purpose, criteria, and limitations of the decisions generated",
+                  "End-users informed of the benefits of the AI system",
+                  "Mechanism in place to regularly communicate with external stakeholders"
+                ]
+              ),
+            autoSectionsCompleted.has(9),
+            autoSectionsCompleted.has(9) ? 6 : 0,
+            6
+          )}
 
           {/* Section 10: AI Accountability */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">AI Accountability</h2>
-            </div>
-            
-            {renderCompletedSection(
-              "This section is intended to ensure that the organization has risk management mechanisms in place to effectively manage identified AI risk.",
-              [
-                "✓ Risk management system implemented to address risks identified in the AI system",
-                "✓ AI system can be audited by independent third parties",
-                "✓ Checks conducted at appropriate intervals to confirm that the AI system is still trustworthy"
-              ]
-            )}
-          </div>
+          {renderCollapsibleSection(
+            10,
+            "AI Accountability",
+            autoSectionsCompleted.has(10) ?
+              renderCompletedSection(
+                "This section is intended to ensure that the organization has risk management mechanisms in place to effectively manage identified AI risk.",
+                [
+                  "✓ Risk management system implemented to address risks identified in the AI system",
+                  "✓ AI system can be audited by independent third parties",
+                  "✓ Checks conducted at appropriate intervals to confirm that the AI system is still trustworthy"
+                ]
+              ) :
+              renderIncompleteSection(
+                "AI Accountability",
+                "This section is intended to ensure that the organization has risk management mechanisms in place to effectively manage identified AI risk.",
+                [
+                  "Risk management system implemented to address risks identified in the AI system",
+                  "AI system can be audited by independent third parties",
+                  "Checks conducted at appropriate intervals to confirm that the AI system is still trustworthy"
+                ]
+              ),
+            autoSectionsCompleted.has(10),
+            autoSectionsCompleted.has(10) ? 3 : 0,
+            3
+          )}
         </div>
 
         {/* Action Buttons */}

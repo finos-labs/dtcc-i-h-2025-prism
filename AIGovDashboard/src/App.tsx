@@ -13,8 +13,6 @@ import ExplainabilityPage from "./pages/ExplainabilityPage";
 import { ReactNode } from "react";
 import ReportPage from "./pages/ReportPage";
 import AppLayout from "./components/AppLayout";
-import BenchmarkingPage from "./pages/BenchmarkingPage";
-import RedTeamingPage from "./pages/RedTeamingPage";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthCallback from "./components/AuthCallback";
@@ -173,18 +171,6 @@ function App() {
               }
             />
 
-            <Route
-              path="/projects/:id/benchmarking"
-              element={
-                <ProtectedRoute>
-                  <AppLayout showSidebar={false}>
-                    <SidebarManager path="/projects/:id/benchmarking">
-                      <BenchmarkingPage />
-                    </SidebarManager>
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
 
             <Route
               path="/projects/:id/drift"
@@ -199,18 +185,6 @@ function App() {
               }
             />
 
-            <Route
-              path="/projects/:id/redteaming"
-              element={
-                <ProtectedRoute>
-                  <AppLayout showSidebar={false}>
-                    <SidebarManager path="/projects/:id/redteaming">
-                      <RedTeamingPage />
-                    </SidebarManager>
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
 
             <Route
               path="/projects/:id/risk-assessment"
