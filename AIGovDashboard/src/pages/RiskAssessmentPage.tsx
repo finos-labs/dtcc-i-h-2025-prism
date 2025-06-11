@@ -98,9 +98,10 @@ const RiskAssessmentPage: React.FC = () => {
     dataQuality: '',
     thirdPartyRisks: ''
   });
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([1])); // Start with section 1 expanded
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set()); // Start with all sections collapsed
   const [analysisCompleted, setAnalysisCompleted] = useState<boolean>(false);
   const [autoSectionsCompleted, setAutoSectionsCompleted] = useState<Set<number>>(new Set()); // Track which auto sections are actually completed
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     if (!isDummyProject && id) {
@@ -1209,8 +1210,8 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
       });
       localStorage.setItem('riskAssessmentReports', JSON.stringify(updatedReports));
       
-      // Don't auto-download, just confirm storage
-      alert('✅ AI Risk Assessment analysis completed and saved to storage! You can download the report from the Reports page.');
+      // Show success modal instead of alert
+      setShowSuccessModal(true);
       
     } catch (error) {
       console.error('Error generating PDF report:', error);
@@ -1519,6 +1520,69 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
     </div>
   );
 
+  // Success Modal Component
+  const SuccessModal = () => (
+    <div className={`fixed inset-0 z-50 overflow-y-auto transition-opacity duration-300 ${showSuccessModal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        {/* Background overlay */}
+        <div 
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          onClick={() => setShowSuccessModal(false)}
+        ></div>
+
+        {/* Modal panel */}
+        <div className={`inline-block align-bottom bg-white rounded-2xl px-6 pt-6 pb-6 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ${showSuccessModal ? 'scale-100' : 'scale-95'}`}>
+          <div className="text-center">
+            {/* Success Icon */}
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              Report Generated Successfully!
+            </h3>
+            
+            {/* Description */}
+            <p className="text-gray-600 mb-6">
+              Your AI Risk Assessment analysis has been completed and saved to storage. The comprehensive report includes detailed recommendations and compliance insights.
+            </p>
+            
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-teal-50 rounded-lg p-3">
+                <div className="text-2xl font-bold text-teal-600">{calculateProgress()}%</div>
+                <div className="text-sm text-teal-700">Completed</div>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3">
+                <div className="text-2xl font-bold text-blue-600">{getCompletedSections()}/10</div>
+                <div className="text-sm text-blue-700">Sections</div>
+              </div>
+            </div>
+            
+            {/* Action Button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setShowSuccessModal(false)}
+                className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-all duration-200"
+              >
+                Done
+              </Button>
+            </div>
+            
+            {/* Additional Info */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500">
+                <Clock className="w-3 h-3 inline mr-1" />
+                Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center">
@@ -1532,6 +1596,9 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {/* Success Modal */}
+      <SuccessModal />
+      
       <div className="container mx-auto px-6 py-6 max-w-7xl">
                 {/* Compact Header */}
         <div className="flex items-center justify-between mb-6">
@@ -2127,15 +2194,7 @@ MAKE EVERY RECOMMENDATION UNIQUE - NO REPETITION ALLOWED!`
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            onClick={handleSave}
-            variant="outline"
-            className="flex items-center gap-2 px-6 py-3"
-            disabled={loading}
-          >
-            <Save className="w-4 h-4" />
-            Save Progress
-          </Button>
+         
           
         
           
