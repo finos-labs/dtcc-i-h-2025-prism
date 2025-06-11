@@ -457,6 +457,16 @@ const HomePage: React.FC = () => {
               <span>Dashboard</span>
             </Link>
 
+            <Link
+              to="/iso"
+              className="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors"
+            >
+              <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Award className="h-4 w-4 text-blue-600" />
+              </div>
+              <span>ISO 42001 Audit</span>
+            </Link>
+
             {/* Quick Stats in Sidebar */}
           </nav>
 
@@ -472,7 +482,7 @@ const HomePage: React.FC = () => {
             <div>
               <div className="flex items-center space-x-3 mb-2">
                 <h1 className="text-3xl font-medium text-gray-900">
-                  Prism Dashboard DTCC <b>X</b> Hackathon
+                  PRISM Dashboard DTCC <b>X</b> Hackathon
                 </h1>
               </div>
               <p className="text-gray-600 font-medium">

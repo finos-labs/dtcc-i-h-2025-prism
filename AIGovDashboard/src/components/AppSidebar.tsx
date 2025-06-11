@@ -9,6 +9,7 @@ import {
   FileQuestion,
   GitCompare,
   AlertTriangle,
+  Award,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 

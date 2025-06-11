@@ -28,3 +28,4 @@ gunicorn
 python-dotenv==1.0.0
 python-jose>=3.3.0
 pydantic_settings
+tf-keras
