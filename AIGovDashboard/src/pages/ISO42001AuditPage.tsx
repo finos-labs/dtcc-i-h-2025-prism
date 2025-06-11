@@ -4,102 +4,109 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
   FileText,
   Target,
   Award,
   AlertCircle,
   Shield,
-  Users,
   Settings,
-  BookOpen,
-  Database,
-  Eye,
-  UserCheck,
   Zap,
   Home,
   Upload,
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import axios from 'axios';
 
 const ISO42001AuditPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([1, 2, 3]));
-  const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
-  const [autoSectionsCompleted, setAutoSectionsCompleted] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(
+    new Set()
+  );
+  const [completedSections, setCompletedSections] = useState<Set<number>>(
+    new Set()
+  );
+  const [autoSectionsCompleted, setAutoSectionsCompleted] = useState<
+    Set<string>
+  >(new Set());
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentUploadSection, setCurrentUploadSection] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    checkAutoSectionsCompletion();
+    const initializePage = async () => {
+      try {
+        setLoading(true);
+
+        // Check URL parameters first
+        const urlParams = new URLSearchParams(window.location.search);
+        const shouldAutoComplete = urlParams.get("autoComplete") === "true";
+
+        // Check sessionStorage
+        const storedSections = sessionStorage.getItem("iso42001_auto_sections");
+        console.log("Checking stored sections:", storedSections);
+
+        if (storedSections || shouldAutoComplete) {
+          let sectionsToComplete = [
+            "impact-assessment",
+            "testing-framework",
+            "monitoring-systems",
+            "reporting-mechanisms",
+          ];
+
+          if (storedSections) {
+            try {
+              sectionsToComplete = JSON.parse(storedSections);
+            } catch (e) {
+              console.error("Error parsing stored sections:", e);
+            }
+          }
+
+          console.log("Auto-completing sections:", sectionsToComplete);
+
+          // Set the auto-completed sections
+          setAutoSectionsCompleted(new Set(sectionsToComplete));
+
+          // Determine which main sections should be marked as completed
+          const mainSections = new Set<number>();
+          if (sectionsToComplete.includes("impact-assessment"))
+            mainSections.add(2);
+          if (sectionsToComplete.includes("testing-framework"))
+            mainSections.add(3);
+          if (
+            sectionsToComplete.includes("monitoring-systems") ||
+            sectionsToComplete.includes("reporting-mechanisms")
+          ) {
+            mainSections.add(4);
+          }
+
+          setCompletedSections(mainSections);
+          console.log("Set completed main sections:", Array.from(mainSections));
+
+          // Clear the sessionStorage
+          sessionStorage.removeItem("iso42001_auto_sections");
+
+          // Remove the URL parameter
+          if (shouldAutoComplete) {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, "", newUrl);
+          }
+
+          // Add artificial delay for loading state
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error("Error initializing page:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializePage();
   }, []);
 
-  const checkAutoSectionsCompletion = async () => {
-    try {
-      setLoading(true);
-      
-      // Get token from localStorage
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        console.log('No access token found');
-        setLoading(false);
-        return;
-      }
-
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      };
-
-      // Check if models/data exist for any project (since this is a general audit page)
-      // We'll check for a dummy project or use a default approach
-      try {
-        // Try to check for models - if successful, auto-complete certain subsections
-        const modelsResponse = await axios.get(`https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/dummy-1/models/list`, config);
-        
-        // Only mark subsections as auto-completed if we get a successful response with actual data
-        if (modelsResponse.data && Array.isArray(modelsResponse.data) && modelsResponse.data.length > 0) {
-          console.log('Models found, auto-completing subsections:', modelsResponse.data);
-          // Auto-complete specific subsections when models exist
-          setAutoSectionsCompleted(new Set([
-            'impact-assessment',
-            'risk-mitigation-strategies',
-            'testing-framework',
-            'kpi-definition',
-            'monitoring-systems', 
-            'reporting-mechanisms'
-          ]));
-          // Update completed sections to reflect which main sections have any completed subsections
-          setCompletedSections(new Set([1, 2, 3, 4]));
-        } else {
-          console.log('No model data found, all sections remain manual');
-          // No model data, all sections remain manual (clickable for upload)
-          setAutoSectionsCompleted(new Set());
-          setCompletedSections(new Set());
-        }
-      } catch (apiError) {
-        console.log('Models API call failed, all sections remain manual:', apiError);
-        // API call failed, all sections remain manual (clickable for upload)
-        setAutoSectionsCompleted(new Set());
-        setCompletedSections(new Set());
-      }
-    } catch (error) {
-      console.error('Error checking auto sections completion:', error);
-      setAutoSectionsCompleted(new Set());
-      setCompletedSections(new Set());
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const toggleSection = (sectionNumber: number) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(sectionNumber)) {
         newSet.delete(sectionNumber);
@@ -121,7 +128,10 @@ const ISO42001AuditPage: React.FC = () => {
     return "bg-red-500";
   };
 
-  const handleSubsectionClick = (subsectionId: string, subsectionTitle: string) => {
+  const handleSubsectionClick = (
+    subsectionId: string,
+    subsectionTitle: string
+  ) => {
     if (autoSectionsCompleted.has(subsectionId)) {
       // If auto-completed, do nothing (already completed)
       return;
@@ -142,14 +152,17 @@ const ISO42001AuditPage: React.FC = () => {
   const handleSubmitDocument = () => {
     if (uploadedFile) {
       // Here you would typically upload the document to your backend
-      console.log(`Uploading document for ${currentUploadSection}:`, uploadedFile);
-      
+      console.log(
+        `Uploading document for ${currentUploadSection}:`,
+        uploadedFile
+      );
+
       // For demo purposes, mark the subsection as completed
       const subsectionId = getSubsectionIdFromTitle(currentUploadSection);
       if (subsectionId) {
-        setAutoSectionsCompleted(prev => new Set([...prev, subsectionId]));
+        setAutoSectionsCompleted((prev) => new Set([...prev, subsectionId]));
       }
-      
+
       alert(`Document uploaded successfully for ${currentUploadSection}!`);
       setShowUploadModal(false);
       setUploadedFile(null);
@@ -160,7 +173,7 @@ const ISO42001AuditPage: React.FC = () => {
   const getSubsectionIdFromTitle = (title: string): string | null => {
     const titleMap: Record<string, string> = {
       "AI Policy Documentation": "ai-policy-documentation",
-      "Procedures and Guidelines": "procedures-guidelines", 
+      "Procedures and Guidelines": "procedures-guidelines",
       "Record Keeping System": "record-keeping-system",
       "Impact Assessment": "impact-assessment",
       "Risk Mitigation Strategies": "risk-mitigation-strategies",
@@ -181,16 +194,18 @@ const ISO42001AuditPage: React.FC = () => {
     description: string
   ) => {
     const isAutoCompleted = autoSectionsCompleted.has(subsectionId);
-    
+
     return (
-      <div 
+      <div
         key={subsectionId}
         className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
-          isAutoCompleted 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer'
+          isAutoCompleted
+            ? "bg-green-50 border-green-200"
+            : "bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer"
         }`}
-        onClick={() => !isAutoCompleted && handleSubsectionClick(subsectionId, title)}
+        onClick={() =>
+          !isAutoCompleted && handleSubsectionClick(subsectionId, title)
+        }
       >
         {isAutoCompleted ? (
           <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -198,11 +213,21 @@ const ISO42001AuditPage: React.FC = () => {
           <div className="w-5 h-5 border-2 border-gray-300 rounded mt-0.5 flex-shrink-0"></div>
         )}
         <div className="flex-1">
-          <h4 className={`font-medium ${isAutoCompleted ? 'text-green-900' : 'text-gray-900'}`}>
+          <h4
+            className={`font-medium ${
+              isAutoCompleted ? "text-green-900" : "text-gray-900"
+            }`}
+          >
             {title}
           </h4>
-          <p className={`text-sm ${isAutoCompleted ? 'text-green-700' : 'text-gray-600'}`}>
-            {isAutoCompleted ? 'Automatically verified and implemented' : description}
+          <p
+            className={`text-sm ${
+              isAutoCompleted ? "text-green-700" : "text-gray-600"
+            }`}
+          >
+            {isAutoCompleted
+              ? "Automatically verified and implemented"
+              : description}
           </p>
           {isAutoCompleted && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 mt-1">
@@ -218,23 +243,33 @@ const ISO42001AuditPage: React.FC = () => {
     sectionNumber: number,
     title: string,
     icon: React.ReactNode,
-    subsections: Array<{id: string, title: string, description: string}>,
+    subsections: Array<{ id: string; title: string; description: string }>,
     isCompleted: boolean = false
   ) => {
     // Check if any subsections are completed to determine section status
-    const hasCompletedSubsections = subsections.some(sub => autoSectionsCompleted.has(sub.id));
-    const allSubsectionsCompleted = subsections.every(sub => autoSectionsCompleted.has(sub.id));
-    
+    const hasCompletedSubsections = subsections.some((sub) =>
+      autoSectionsCompleted.has(sub.id)
+    );
+    const allSubsectionsCompleted = subsections.every((sub) =>
+      autoSectionsCompleted.has(sub.id)
+    );
+
     return (
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div 
+        <div
           className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => toggleSection(sectionNumber)}
         >
           <div className="flex items-center">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 ${
-              allSubsectionsCompleted ? 'bg-green-100' : hasCompletedSubsections ? 'bg-yellow-100' : 'bg-blue-100'
-            }`}>
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 ${
+                allSubsectionsCompleted
+                  ? "bg-green-100"
+                  : hasCompletedSubsections
+                  ? "bg-yellow-100"
+                  : "bg-blue-100"
+              }`}
+            >
               {allSubsectionsCompleted ? (
                 <CheckCircle className="w-6 h-6 text-green-600" />
               ) : (
@@ -244,7 +279,11 @@ const ISO42001AuditPage: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               <p className="text-sm text-gray-600">
-                {allSubsectionsCompleted ? "Completed" : hasCompletedSubsections ? "Partially Complete" : "In Progress"}
+                {allSubsectionsCompleted
+                  ? "Completed"
+                  : hasCompletedSubsections
+                  ? "Partially Complete"
+                  : "In Progress"}
               </p>
             </div>
           </div>
@@ -270,16 +309,19 @@ const ISO42001AuditPage: React.FC = () => {
           <div className="px-6 pb-6 border-t border-gray-100">
             <div className="space-y-4 mt-4">
               <p className="text-gray-700 mb-4">
-                {allSubsectionsCompleted 
+                {allSubsectionsCompleted
                   ? "All requirements completed"
-                  : hasCompletedSubsections 
-                    ? "Some requirements completed automatically, others require documentation"
-                    : "Click on incomplete items to upload documentation"
-                }
+                  : hasCompletedSubsections
+                  ? "Some requirements completed automatically, others require documentation"
+                  : "Click on incomplete items to upload documentation"}
               </p>
               <div className="space-y-3">
-                {subsections.map(subsection => 
-                  renderSubsectionItem(subsection.id, subsection.title, subsection.description)
+                {subsections.map((subsection) =>
+                  renderSubsectionItem(
+                    subsection.id,
+                    subsection.title,
+                    subsection.description
+                  )
                 )}
               </div>
             </div>
@@ -294,7 +336,9 @@ const ISO42001AuditPage: React.FC = () => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Upload Documentation</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Upload Documentation
+          </h3>
           <button
             onClick={() => setShowUploadModal(false)}
             className="text-gray-400 hover:text-gray-600"
@@ -302,7 +346,7 @@ const ISO42001AuditPage: React.FC = () => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <p className="text-sm text-gray-600 mb-4">
           Upload documentation for: <strong>{currentUploadSection}</strong>
         </p>
@@ -310,7 +354,9 @@ const ISO42001AuditPage: React.FC = () => {
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
           <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
           <p className="text-sm text-gray-600 mb-2">
-            {uploadedFile ? uploadedFile.name : "Click to upload or drag and drop"}
+            {uploadedFile
+              ? uploadedFile.name
+              : "Click to upload or drag and drop"}
           </p>
           <input
             type="file"
@@ -345,9 +391,14 @@ const ISO42001AuditPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center">
-        <div className="text-center">
+        <div className="bg-white rounded-xl p-8 max-w-sm w-full mx-4 text-center shadow-lg">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading ISO 42001 compliance audit...</p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Loading ISO 42001 Audit
+          </h3>
+          <p className="text-gray-600">
+            Setting up your compliance checklist...
+          </p>
         </div>
       </div>
     );
@@ -396,16 +447,20 @@ const ISO42001AuditPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center text-sm text-gray-500 mb-2">
-                <button 
+                <button
                   onClick={() => navigate("/home")}
                   className="hover:text-blue-600 transition-colors"
                 >
                   Dashboard
                 </button>
                 <span className="mx-2">/</span>
-                <span className="font-medium text-gray-700">ISO 42001 Audit</span>
+                <span className="font-medium text-gray-700">
+                  ISO 42001 Audit
+                </span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">ISO 42001 Compliance Audit</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                ISO 42001 Compliance Audit
+              </h1>
               <p className="text-gray-600 mt-1">
                 AI Management System Standard
               </p>
@@ -424,15 +479,24 @@ const ISO42001AuditPage: React.FC = () => {
                     <Settings className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="font-semibold text-gray-900">Framework Adaptation</h3>
+                    <h3 className="font-semibold text-gray-900">
+                      Framework Adaptation
+                    </h3>
                     <p className="text-sm text-gray-600">Overall Progress</p>
                   </div>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">{complianceScore}%</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  {complianceScore}%
+                </span>
                 <div className="w-20 h-2 bg-gray-200 rounded-full">
-                  <div className={`h-2 rounded-full ${getProgressColor(complianceScore)}`} style={{ width: `${complianceScore}%` }}></div>
+                  <div
+                    className={`h-2 rounded-full ${getProgressColor(
+                      complianceScore
+                    )}`}
+                    style={{ width: `${complianceScore}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -445,49 +509,63 @@ const ISO42001AuditPage: React.FC = () => {
                     <AlertCircle className="w-5 h-5 text-yellow-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="font-semibold text-gray-900">Required Actions</h3>
+                    <h3 className="font-semibold text-gray-900">
+                      Required Actions
+                    </h3>
                     <p className="text-sm text-gray-600">Pending Items</p>
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                {(autoSectionsCompleted.has('ai-policy-documentation') || 
-                  autoSectionsCompleted.has('procedures-guidelines') || 
-                  autoSectionsCompleted.has('record-keeping-system')) ? (
+                {autoSectionsCompleted.has("ai-policy-documentation") ||
+                autoSectionsCompleted.has("procedures-guidelines") ||
+                autoSectionsCompleted.has("record-keeping-system") ? (
                   <div className="flex items-center text-sm">
                     <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-gray-700">Documentation and Policy Development</span>
+                    <span className="text-gray-700">
+                      Documentation and Policy Development
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center text-sm">
                     <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-gray-700">Documentation and Policy Development</span>
+                    <span className="text-gray-700">
+                      Documentation and Policy Development
+                    </span>
                   </div>
                 )}
-                {(autoSectionsCompleted.has('impact-assessment') || 
-                  autoSectionsCompleted.has('risk-mitigation-strategies') || 
-                  autoSectionsCompleted.has('incident-response')) ? (
+                {autoSectionsCompleted.has("impact-assessment") ||
+                autoSectionsCompleted.has("risk-mitigation-strategies") ||
+                autoSectionsCompleted.has("incident-response") ? (
                   <div className="flex items-center text-sm">
                     <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-gray-700">Risk Assessment and Management</span>
+                    <span className="text-gray-700">
+                      Risk Assessment and Management
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center text-sm">
                     <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-gray-700">Risk Assessment and Management</span>
+                    <span className="text-gray-700">
+                      Risk Assessment and Management
+                    </span>
                   </div>
                 )}
-                {(autoSectionsCompleted.has('development-controls') || 
-                  autoSectionsCompleted.has('testing-framework') || 
-                  autoSectionsCompleted.has('deployment-procedures')) ? (
+                {autoSectionsCompleted.has("development-controls") ||
+                autoSectionsCompleted.has("testing-framework") ||
+                autoSectionsCompleted.has("deployment-procedures") ? (
                   <div className="flex items-center text-sm">
                     <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-gray-700">AI System Lifecycle Management</span>
+                    <span className="text-gray-700">
+                      AI System Lifecycle Management
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center text-sm">
                     <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-gray-700">AI System Lifecycle Management</span>
+                    <span className="text-gray-700">
+                      AI System Lifecycle Management
+                    </span>
                   </div>
                 )}
               </div>
@@ -501,17 +579,29 @@ const ISO42001AuditPage: React.FC = () => {
                     <Award className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="font-semibold text-gray-900">Compliance Score</h3>
-                    <p className="text-sm text-gray-600">Based on ISO 42001 requirements</p>
+                    <h3 className="font-semibold text-gray-900">
+                      Compliance Score
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Based on ISO 42001 requirements
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">{complianceScore}%</div>
-                <div className={`w-full h-3 rounded-full mb-2 ${getProgressColor(complianceScore)}`}>
+                <div className="text-4xl font-bold text-gray-900 mb-2">
+                  {complianceScore}%
+                </div>
+                <div
+                  className={`w-full h-3 rounded-full mb-2 ${getProgressColor(
+                    complianceScore
+                  )}`}
+                >
                   <div className="h-full bg-gray-200 rounded-full">
-                    <div 
-                      className={`h-full rounded-full ${getProgressColor(complianceScore)}`}
+                    <div
+                      className={`h-full rounded-full ${getProgressColor(
+                        complianceScore
+                      )}`}
                       style={{ width: `${complianceScore}%` }}
                     ></div>
                   </div>
@@ -523,7 +613,9 @@ const ISO42001AuditPage: React.FC = () => {
           {/* ISO 42001 Compliance Checklist */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-xl font-bold text-gray-900">ISO 42001 Compliance Checklist</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                ISO 42001 Compliance Checklist
+              </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Comprehensive assessment based on AI Management System Standard
               </p>
@@ -539,18 +631,18 @@ const ISO42001AuditPage: React.FC = () => {
                   {
                     id: "ai-policy-documentation",
                     title: "AI Policy Documentation",
-                    description: "Create and maintain AI policy documents"
+                    description: "Create and maintain AI policy documents",
                   },
                   {
                     id: "procedures-guidelines",
-                    title: "Procedures and Guidelines", 
-                    description: "Develop operational procedures"
+                    title: "Procedures and Guidelines",
+                    description: "Develop operational procedures",
                   },
                   {
                     id: "record-keeping-system",
                     title: "Record Keeping System",
-                    description: "Implement documentation management"
-                  }
+                    description: "Implement documentation management",
+                  },
                 ]
               )}
 
@@ -563,18 +655,18 @@ const ISO42001AuditPage: React.FC = () => {
                   {
                     id: "impact-assessment",
                     title: "Impact Assessment",
-                    description: "Conduct AI impact analysis"
+                    description: "Conduct AI impact analysis",
                   },
                   {
                     id: "risk-mitigation-strategies",
                     title: "Risk Mitigation Strategies",
-                    description: "Develop risk management plans"
+                    description: "Develop risk management plans",
                   },
                   {
                     id: "incident-response",
                     title: "Incident Response",
-                    description: "Create incident handling procedures"
-                  }
+                    description: "Create incident handling procedures",
+                  },
                 ]
               )}
 
@@ -587,18 +679,18 @@ const ISO42001AuditPage: React.FC = () => {
                   {
                     id: "development-controls",
                     title: "Development Controls",
-                    description: "Implement development standards"
+                    description: "Implement development standards",
                   },
                   {
                     id: "testing-framework",
                     title: "Testing Framework",
-                    description: "Establish testing protocols"
+                    description: "Establish testing protocols",
                   },
                   {
                     id: "deployment-procedures",
-                    title: "Deployment Procedures", 
-                    description: "Define deployment guidelines"
-                  }
+                    title: "Deployment Procedures",
+                    description: "Define deployment guidelines",
+                  },
                 ]
               )}
 
@@ -611,42 +703,20 @@ const ISO42001AuditPage: React.FC = () => {
                   {
                     id: "kpi-definition",
                     title: "KPI Definition",
-                    description: "Define performance indicators"
+                    description: "Define performance indicators",
                   },
                   {
                     id: "monitoring-systems",
                     title: "Monitoring Systems",
-                    description: "Implement monitoring tools"
+                    description: "Implement monitoring tools",
                   },
                   {
                     id: "reporting-mechanisms",
                     title: "Reporting Mechanisms",
-                    description: "Establish reporting procedures"
-                  }
+                    description: "Establish reporting procedures",
+                  },
                 ]
               )}
-
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => navigate("/home")}
-              className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </button>
-            
-            <div className="flex space-x-3">
-              <button className="inline-flex items-center px-6 py-3 border border-blue-600 rounded-xl text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 transition-colors">
-                <FileText className="w-4 h-4 mr-2" />
-                Generate Report
-              </button>
-              <button className="inline-flex items-center px-6 py-3 bg-blue-600 rounded-xl text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-                Complete Audit
-              </button>
             </div>
           </div>
         </div>
@@ -658,4 +728,4 @@ const ISO42001AuditPage: React.FC = () => {
   );
 };
 
-export default ISO42001AuditPage; 
+export default ISO42001AuditPage;

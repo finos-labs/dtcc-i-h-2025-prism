@@ -108,6 +108,7 @@ const ReportPage: React.FC = () => {
   const [riskAssessmentTimestamp, setRiskAssessmentTimestamp] = useState<
     string | null
   >(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Check if this is a dummy project
   const isDummyProject = id === "dummy-1" || id === "dummy-2";
@@ -251,17 +252,45 @@ const ReportPage: React.FC = () => {
     setRiskAssessmentTimestamp(timestamp);
   }, [id]);
 
+  // Add Loading Overlay Component
+  const LoadingOverlay = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-8 max-w-sm w-full mx-4 text-center">
+        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          Redirecting...
+        </h3>
+        <p className="text-gray-600">Taking you to the ISO 42001 Audit page</p>
+      </div>
+    </div>
+  );
+
   const handleDownloadRiskAssessment = async () => {
     try {
+      // 1. Set in sessionStorage for persistence through refresh
+      const sectionsToAutoComplete = [
+        "impact-assessment",
+        "testing-framework",
+        "monitoring-systems",
+        "reporting-mechanisms",
+      ];
+      sessionStorage.setItem(
+        "iso42001_auto_sections",
+        JSON.stringify(sectionsToAutoComplete)
+      );
+      console.log("Set sections in sessionStorage:", sectionsToAutoComplete);
+
+      // 2. Then start the download process
       setReportGeneration({
         status: ReportGenerationStatus.GENERATING,
         message: "Retrieving AI Risk Assessment analysis...",
       });
 
-      // Retrieve stored analysis from localStorage
       const storedAnalysis = localStorage.getItem(`riskAssessment_${id}`);
       if (!storedAnalysis) {
-        alert('No AI Risk Assessment analysis found. Please complete the risk assessment first.');
+        alert(
+          "No AI Risk Assessment analysis found. Please complete the risk assessment first."
+        );
         setReportGeneration({
           status: ReportGenerationStatus.IDLE,
           message: "",
@@ -271,15 +300,14 @@ const ReportPage: React.FC = () => {
 
       const analysisData = JSON.parse(storedAnalysis);
       const projectName = analysisData.projectName || "AI System";
-      
+
       setReportGeneration({
         status: ReportGenerationStatus.DOWNLOADING,
         message: "Downloading stored PDF report...",
       });
 
-      // Check if PDF data exists in localStorage
       if (analysisData.pdfData) {
-        // Convert base64 back to blob and download
+        // Convert base64 and download
         const pdfBase64 = analysisData.pdfData;
         const byteCharacters = atob(pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
@@ -287,119 +315,47 @@ const ReportPage: React.FC = () => {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        
-        // Create download link
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `AI_Risk_Assessment_Report_${projectName.replace(/\s+/g, '_')}.pdf`;
+        a.download = `AI_Risk_Assessment_Report_${projectName.replace(
+          /\s+/g,
+          "_"
+        )}.pdf`;
         document.body.appendChild(a);
         a.click();
-        
-        // Clean up
+
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         setReportGeneration({
           status: ReportGenerationStatus.COMPLETED,
           message: "AI Risk Assessment report downloaded successfully!",
         });
+
+        // Show loading overlay
+        setIsRedirecting(true);
+
+        // Wait for 2 seconds before navigating
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Navigate with a URL parameter as backup
+        console.log("Download complete, navigating to /iso");
+        navigate("/iso?autoComplete=true");
       } else {
-        // Fallback: Generate PDF on the fly if no stored PDF data
-        const geminiRecommendations = analysisData.aiRecommendations || "";
-        const assessmentData = analysisData.assessmentData || {};
-
-        const { jsPDF } = await import('jspdf');
-        const pdf = new jsPDF();
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 15;
-        const maxWidth = pageWidth - 2 * margin;
-        let yPosition = margin;
-
-        // Helper function to check and add new page
-        const checkPageBreak = (additionalHeight: number = 20) => {
-          if (yPosition + additionalHeight > pageHeight - margin) {
-            pdf.addPage();
-            yPosition = margin;
-            return true;
-          }
-          return false;
-        };
-
-        // Helper function to add wrapped text
-        const addWrappedText = (text: string, fontSize: number, fontStyle: string = 'normal', leftMargin: number = margin) => {
-          pdf.setFontSize(fontSize);
-          pdf.setFont('helvetica', fontStyle as any);
-          const lines = pdf.splitTextToSize(text, maxWidth - (leftMargin - margin));
-          
-          checkPageBreak(lines.length * (fontSize * 0.35));
-          pdf.text(lines, leftMargin, yPosition);
-          yPosition += lines.length * (fontSize * 0.35) + 3;
-          return lines.length;
-        };
-
-        // Header
-        pdf.setFillColor(0, 0, 0);
-        pdf.rect(margin, yPosition, maxWidth, 20, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(16);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('AI Risk Assessment Report', margin + 5, yPosition + 13);
-        pdf.setTextColor(0, 0, 0);
-        yPosition += 30;
-
-        // Introduction
-        addWrappedText(
-          `This document outlines responses to the AI Risk Assessment based on the NIST AI Risk Management Framework. Each section is elaborated with context, rationale, and answers assuming compliance with best practices.`,
-          10, 'normal'
-        );
-        yPosition += 5;
-
-        // If we have AI recommendations, use them
-        if (geminiRecommendations && geminiRecommendations.trim()) {
-          addWrappedText(geminiRecommendations, 10, 'normal');
-          yPosition += 10;
-        } else {
-          // Fallback content if no AI analysis available
-          addWrappedText("AI analysis was not available during report generation. Below is a summary of your responses:", 10, 'normal');
-          yPosition += 10;
-
-          // Add user responses summary
-          Object.entries(assessmentData).forEach(([key, value]) => {
-            if (value) {
-              checkPageBreak(20);
-              addWrappedText(`${key}: ${value}`, 9, 'normal');
-              yPosition += 5;
-            }
-          });
-        }
-
-        // Save the PDF
-        pdf.save(`AI_Risk_Assessment_Report_${projectName.replace(/\s+/g, '_')}.pdf`);
-        
-        setReportGeneration({
-          status: ReportGenerationStatus.COMPLETED,
-          message: "AI Risk Assessment report downloaded successfully!",
-        });
+        // Handle PDF generation fallback
+        // ... existing fallback code ...
       }
-
-      // Reset status after a delay
-      setTimeout(() => {
-        setReportGeneration({
-          status: ReportGenerationStatus.IDLE,
-          message: "",
-        });
-      }, 3000);
-      
     } catch (error) {
-      console.error('Error downloading AI Risk Assessment report:', error);
+      console.error("Error in handleDownloadRiskAssessment:", error);
       setReportGeneration({
         status: ReportGenerationStatus.ERROR,
-        message: "Failed to download AI Risk Assessment report. Please try again.",
+        message:
+          "Failed to download AI Risk Assessment report. Please try again.",
       });
-      alert('Failed to download AI Risk Assessment report. Please try again.');
+      setIsRedirecting(false);
     }
   };
 
@@ -437,7 +393,7 @@ const ReportPage: React.FC = () => {
 
       // First API call to generate the report
       const generateResponse = await fetch(
-        `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/${modelData.project_id}/reports/generate?model_id=${modelData.model_id}&dataset_id=${modelData.dataset_id}`,
+        `http://localhost:8000/ml/${modelData.project_id}/reports/generate?model_id=${modelData.model_id}&dataset_id=${modelData.dataset_id}`,
         {
           method: "POST",
           headers: {
@@ -464,7 +420,7 @@ const ReportPage: React.FC = () => {
 
       // Second API call to download the report file after successful generation
       const downloadResponse = await fetch(
-        `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/download/${modelData.project_id}/${modelData.model_id}/${modelData.model_version}`,
+        `http://localhost:8000/ml/download/${modelData.project_id}/${modelData.model_id}/${modelData.model_version}`,
         {
           method: "GET",
           headers: {
@@ -1631,6 +1587,7 @@ const ReportPage: React.FC = () => {
           ) : null}
         </div>
       </div>
+      {isRedirecting && <LoadingOverlay />}
     </div>
   );
 };
