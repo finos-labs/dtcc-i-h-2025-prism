@@ -6,31 +6,31 @@ const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+interface UploadModalProps {
+  isVisible: boolean;
+  onClose: () => void;
+  isNewVersion?: boolean;
+  projectId?: string;
+}
+
 const UploadModal = ({
   isVisible,
   onClose,
   isNewVersion = false,
   projectId,
-}) => {
+}: UploadModalProps) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [useSyntheticData, setUseSyntheticData] = useState(false);
-  const [p_id, setP_id] = useState(null); // New state to store project ID
+  const [p_id, setP_id] = useState<string | null>(null); // New state to store project ID
 
   // Form data state with safe initialization of projectId
   const [formData, setFormData] = useState({
     name: "",
     model_type: "",
     version: "1.0.0",
-    file: null,
+    file: null as File | null,
     description: "",
-    dataset: null,
+    dataset: null as File | null,
     dataset_type: "",
-    synthetic: {
-      number_of_samples: 1000,
-      feature_range: "-1,1",
-      method: "random",
-      balance_class: false,
-    },
     reportGenerated: false,
     projectId: projectId || "", // Provide a default value
   });
@@ -159,8 +159,8 @@ const UploadModal = ({
       // Move to next step without API call
       setCurrentStep(currentStep + 1);
     } else if (currentStep === 1) {
-      if (!useSyntheticData && !formData.dataset) {
-        alert("Please upload a dataset or select to generate synthetic data");
+      if (!formData.dataset) {
+        alert("Please upload a dataset");
         return;
       }
 
@@ -186,10 +186,8 @@ const UploadModal = ({
         throw new Error("Please fill all required model fields");
       }
 
-      if (!useSyntheticData && !formData.dataset) {
-        throw new Error(
-          "Please upload a dataset or select to generate synthetic data"
-        );
+      if (!formData.dataset) {
+        throw new Error("Please upload a dataset");
       }
 
       // Dispatch event to trigger animation in ProjectOverviewPage
@@ -214,7 +212,7 @@ const UploadModal = ({
       // STEP 1: Upload model file - keeping original API endpoint
       console.log("Step 1: Uploading model file...");
       const modelFormData = new FormData();
-      modelFormData.append("project_id", p_id);
+      modelFormData.append("project_id", p_id || "");
       modelFormData.append("name", formData.name);
       modelFormData.append("model_type", formData.model_type);
       modelFormData.append("version", formData.version);
@@ -246,14 +244,14 @@ const UploadModal = ({
       const modelId = modelData.id;
       localStorage.setItem("model_id", modelId.toString());
 
-      // STEP 2: Upload dataset (if not using synthetic data) - keeping original API endpoint
+      // STEP 2: Upload dataset - keeping original API endpoint
       let datasetId = null;
 
-      if (!useSyntheticData && formData.dataset) {
+      if (formData.dataset) {
         console.log("Step 2: Uploading dataset file...");
         const datasetFormData = new FormData();
         datasetFormData.append("file", formData.dataset);
-        datasetFormData.append("project_id", p_id);
+        datasetFormData.append("project_id", p_id || "");
 
         if (formData.dataset_type) {
           datasetFormData.append(
@@ -285,8 +283,6 @@ const UploadModal = ({
         // Store dataset ID in localStorage
         datasetId = datasetData.id;
         localStorage.setItem("dataset_id", datasetId);
-      } else {
-        // If using synthetic data, create a placeholder dataset ID
       }
       const { error: supabaseError } = await supabase
         .from("modeldetails")
@@ -1020,51 +1016,7 @@ const UploadModal = ({
                 </h5>
 
                 <div className="mb-6">
-                  <div className="flex items-center justify-between p-5 bg-gradient-to-r from-blue-50 to-white rounded-lg shadow-sm border border-blue-100 mb-4">
-                    <div>
-                      <label className="block font-medium mb-1 text-gray-800">
-                        Dataset Method
-                      </label>
-                      <div className="text-sm text-gray-600">
-                        Choose how to provide your dataset
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`${
-                          !useSyntheticData
-                            ? "font-semibold text-blue-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        Upload Dataset
-                      </span>
-                      <div
-                        className={`relative w-14 h-7 rounded-full transition-colors duration-200 ease-in-out cursor-pointer ${
-                          useSyntheticData ? "bg-blue-600" : "bg-gray-300"
-                        }`}
-                        onClick={() => setUseSyntheticData(!useSyntheticData)}
-                      >
-                        <div
-                          className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
-                            useSyntheticData ? "left-8" : "left-1"
-                          }`}
-                        ></div>
-                      </div>
-                      <span
-                        className={`${
-                          useSyntheticData
-                            ? "font-semibold text-blue-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        Synthetic Data
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Dataset form sections */}
-                  {!useSyntheticData ? (
                     <div className="space-y-5">
                       <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
                         <label className="block font-medium mb-2 text-gray-700 flex items-center">
@@ -1154,127 +1106,6 @@ const UploadModal = ({
                         </p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-5">
-                      <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
-                        <label className="block font-medium mb-2 text-gray-700 flex items-center">
-                          Number of Samples{" "}
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          placeholder="1000"
-                          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                          value={formData.synthetic.number_of_samples}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              synthetic: {
-                                ...formData.synthetic,
-                                number_of_samples:
-                                  parseInt(e.target.value) || 1000,
-                              },
-                            })
-                          }
-                          required
-                        />
-                        <p className="text-sm text-gray-500 mt-1">
-                          Number of data records to generate
-                        </p>
-                      </div>
-
-                      <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
-                        <label className="block font-medium mb-2 text-gray-700 flex items-center">
-                          Feature Range{" "}
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="-1,1"
-                          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                          value={formData.synthetic.feature_range}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              synthetic: {
-                                ...formData.synthetic,
-                                feature_range: e.target.value,
-                              },
-                            })
-                          }
-                          required
-                        />
-                        <p className="text-sm text-gray-500 mt-1">
-                          Range of values for features (e.g., -1,1)
-                        </p>
-                      </div>
-
-                      <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
-                        <label className="block font-medium mb-2 text-gray-700 flex items-center">
-                          Generation Method{" "}
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <select
-                          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white"
-                          value={formData.synthetic.method}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              synthetic: {
-                                ...formData.synthetic,
-                                method: e.target.value,
-                              },
-                            })
-                          }
-                          required
-                        >
-                          <option value="random">Random</option>
-                          <option value="normal">Normal Distribution</option>
-                          <option value="uniform">Uniform Distribution</option>
-                          <option value="correlated">
-                            Correlated Features
-                          </option>
-                        </select>
-                        <div className="relative">
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg
-                              className="fill-current h-4 w-4"
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-
-                      {formData.model_type === "classification" && (
-                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
-                          <label className="flex items-center text-gray-700 font-medium cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.synthetic.balance_class}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  synthetic: {
-                                    ...formData.synthetic,
-                                    balance_class: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300 mr-2 transition"
-                            />
-                            <span>Balance Classes</span>
-                          </label>
-                          <p className="text-sm text-gray-500 mt-1 ml-7">
-                            Generate an equal number of samples for each class
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -1369,73 +1200,24 @@ const UploadModal = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-6 mb-6">
-                    {!useSyntheticData ? (
-                      <>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-gray-500 mb-1">
-                            Dataset
-                          </p>
-                          <p className="text-gray-800 font-medium truncate">
-                            {formData.dataset
-                              ? formData.dataset.name
-                              : "Not provided"}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-gray-500 mb-1">
-                            Type
-                          </p>
-                          <p className="text-gray-800 font-medium">
-                            {formData.dataset_type || "Not specified"}
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-gray-500 mb-1">
-                            Data Type
-                          </p>
-                          <p className="text-gray-800 font-medium">
-                            Synthetic data
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-gray-500 mb-1">
-                            Number of Samples
-                          </p>
-                          <p className="text-gray-800 font-medium">
-                            {formData.synthetic.number_of_samples}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-gray-500 mb-1">
-                            Feature Range
-                          </p>
-                          <p className="text-gray-800 font-medium">
-                            {formData.synthetic.feature_range}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-gray-500 mb-1">
-                            Method
-                          </p>
-                          <p className="text-gray-800 font-medium">
-                            {formData.synthetic.method}
-                          </p>
-                        </div>
-                        {formData.model_type === "classification" && (
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <p className="text-sm font-medium text-gray-500 mb-1">
-                              Balance Classes
-                            </p>
-                            <p className="text-gray-800 font-medium">
-                              {formData.synthetic.balance_class ? "Yes" : "No"}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500 mb-1">
+                        Dataset
+                      </p>
+                      <p className="text-gray-800 font-medium truncate">
+                        {formData.dataset
+                          ? formData.dataset.name
+                          : "Not provided"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500 mb-1">
+                        Type
+                      </p>
+                      <p className="text-gray-800 font-medium">
+                        {formData.dataset_type || "Not specified"}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="mt-6 p-4 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-lg flex">

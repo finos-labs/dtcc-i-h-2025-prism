@@ -133,7 +133,6 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     fetchProjects();
     checkFirstTimeUserStatus();
-    fetchAudits();
   }, []);
 
   useEffect(() => {
@@ -183,6 +182,9 @@ const HomePage: React.FC = () => {
       }));
 
       setProjects(mappedProjects);
+      
+      // Refresh audit data after projects are loaded
+      fetchAudits();
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
@@ -240,14 +242,21 @@ const HomePage: React.FC = () => {
       const typedAudits = (audits as Audit[]) || [];
       const typedReports = (reports as Report[]) || [];
 
+      console.log("Fetched audits:", typedAudits.length);
+      console.log("Fetched reports:", typedReports.length);
+      console.log("User projects:", userProjects.length);
+
       // Group audits and reports by project
       const projectSummaries: ProjectAuditSummary[] = userProjects.map(
         (project) => {
+          // Convert project_id to number for comparison since audits and reports use numbers
+          const projectIdNum = parseInt(project.project_id.toString());
+          
           const projectAudits = typedAudits.filter(
-            (audit) => audit.project_id === project.project_id
+            (audit) => audit.project_id === projectIdNum
           );
           const projectReports = typedReports.filter(
-            (report) => report.project_id === project.project_id
+            (report) => report.project_id === projectIdNum
           );
 
           const completed = projectAudits.filter(
@@ -256,6 +265,9 @@ const HomePage: React.FC = () => {
           const failed = projectAudits.filter(
             (audit) => audit.status === "failed"
           ).length;
+          const running = projectAudits.filter(
+            (audit) => audit.status === "running"
+          ).length;
 
           // Calculate pending reports (completed audits without reports)
           const completedAudits = projectAudits.filter(
@@ -263,8 +275,17 @@ const HomePage: React.FC = () => {
           );
           const pendingReports = completedAudits.length - projectReports.length;
 
+          console.log(`Project ${project.project_name} (ID: ${project.project_id}):`, {
+            total_audits: projectAudits.length,
+            completed_audits: completed,
+            failed_audits: failed,
+            running_audits: running,
+            reports_generated: projectReports.length,
+            pending_reports: Math.max(0, pendingReports)
+          });
+
           return {
-            project_id: project.project_id,
+            project_id: projectIdNum,
             project_name: project.project_name,
             total_audits: projectAudits.length,
             completed_audits: completed,
@@ -393,8 +414,9 @@ const HomePage: React.FC = () => {
         setShowSuccessToast(false);
       }, 3000);
 
-      // Refresh the projects list after deletion
+      // Refresh the projects list and audit data after deletion
       fetchProjects();
+      fetchAudits();
     } catch (error) {
       console.error("Error deleting project:", error);
       alert("Failed to delete project. Please try again.");
@@ -495,7 +517,10 @@ const HomePage: React.FC = () => {
                     Evaluations Completed
                   </p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {auditsLoading ? "—" : auditStats.total_completed}
+                    {auditsLoading ? "—" : auditStats.total_completed || 0}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {auditsLoading ? "" : `Total: ${auditStats.total_audits || 0} | Failed: ${auditStats.total_failed || 0}`}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -508,11 +533,12 @@ const HomePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">
-                    Complete Analysis Reports Generated
+                    Analysis Reports Generated
                   </p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {auditsLoading ? "—" : auditStats.total_reports}
+                    {auditsLoading ? "—" : auditStats.total_reports || 0}
                   </p>
+                  
                 </div>
                 <div className="h-12 w-12 bg-purple-50 rounded-xl flex items-center justify-center">
                   <FileText className="h-6 w-6 text-purple-600" />
@@ -678,7 +704,7 @@ const HomePage: React.FC = () => {
               ) : (
                 filteredProjects.map((project) => {
                   const projectSummary = projectAuditSummaries.find(
-                    (p) => p.project_id.toString() === project.project_id
+                    (p) => p.project_id.toString() === project.project_id.toString()
                   );
                   return (
                     <div
@@ -797,7 +823,7 @@ const HomePage: React.FC = () => {
                               <>
                                 <div className="text-center">
                                   <div className="text-xl font-bold text-gray-900">
-                                    {projectSummary.total_audits}
+                                    {projectSummary.total_audits || 0}
                                   </div>
                                   <div className="text-xs text-gray-500">
                                     Audits
@@ -805,12 +831,23 @@ const HomePage: React.FC = () => {
                                 </div>
                                 <div className="text-center">
                                   <div className="text-xl font-bold text-gray-900">
-                                    {projectSummary.reports_generated}
+                                    {projectSummary.reports_generated || 0}
                                   </div>
                                   <div className="text-xs text-gray-500">
                                     Reports
                                   </div>
                                 </div>
+                                
+                                {projectSummary.failed_audits > 0 && (
+                                  <div className="text-center">
+                                    <div className="text-sm font-medium text-red-600">
+                                      {projectSummary.failed_audits}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Failed
+                                    </div>
+                                  </div>
+                                )}
                                 <div className="text-center min-w-[80px]">
                                   <div
                                     className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${
@@ -831,7 +868,7 @@ const HomePage: React.FC = () => {
                                     ) : projectSummary.pending_reports > 0 ? (
                                       <>
                                         <Clock className="h-3 w-3 mr-1" />
-                                        Pending
+                                        Report generation Pending
                                       </>
                                     ) : projectSummary.total_audits > 0 ? (
                                       <>
