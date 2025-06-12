@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { CheckCircle } from "lucide-react";
 
 interface Report {
   id: number;
@@ -99,16 +100,16 @@ const ReportPage: React.FC = () => {
   } | null>(null);
   const [reportGeneration, setReportGeneration] = useState<{
     status: ReportGenerationStatus;
-    message: string;
+    message: string | null;
   }>({
     status: ReportGenerationStatus.IDLE,
-    message: "",
+    message: null,
   });
   const [hasRiskAssessment, setHasRiskAssessment] = useState(false);
   const [riskAssessmentTimestamp, setRiskAssessmentTimestamp] = useState<
     string | null
   >(null);
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Check if this is a dummy project
   const isDummyProject = id === "dummy-1" || id === "dummy-2";
@@ -252,22 +253,11 @@ const ReportPage: React.FC = () => {
     setRiskAssessmentTimestamp(timestamp);
   }, [id]);
 
-  // Add Loading Overlay Component
-  const LoadingOverlay = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-8 max-w-sm w-full mx-4 text-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          Redirecting...
-        </h3>
-        <p className="text-gray-600">Taking you to the ISO 42001 Audit page</p>
-      </div>
-    </div>
-  );
-
   const handleDownloadRiskAssessment = async () => {
     try {
-      // 1. Set in sessionStorage for persistence through refresh
+      console.log("Starting risk assessment download...");
+
+      // 1. Set in sessionStorage for persistence
       const sectionsToAutoComplete = [
         "impact-assessment",
         "testing-framework",
@@ -293,7 +283,7 @@ const ReportPage: React.FC = () => {
         );
         setReportGeneration({
           status: ReportGenerationStatus.IDLE,
-          message: "",
+          message: null,
         });
         return;
       }
@@ -335,15 +325,16 @@ const ReportPage: React.FC = () => {
           message: "AI Risk Assessment report downloaded successfully!",
         });
 
-        // Show loading overlay
-        setIsRedirecting(true);
+        // Show success modal
+        setShowSuccessModal(true);
 
-        // Wait for 2 seconds before navigating
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Navigate with a URL parameter as backup
-        console.log("Download complete, navigating to /iso");
-        navigate("/iso?autoComplete=true");
+        // Reset status after modal is closed
+        setTimeout(() => {
+          setReportGeneration({
+            status: ReportGenerationStatus.IDLE,
+            message: null,
+          });
+        }, 3000);
       } else {
         // Handle PDF generation fallback
         // ... existing fallback code ...
@@ -355,7 +346,6 @@ const ReportPage: React.FC = () => {
         message:
           "Failed to download AI Risk Assessment report. Please try again.",
       });
-      setIsRedirecting(false);
     }
   };
 
@@ -524,7 +514,7 @@ const ReportPage: React.FC = () => {
       setTimeout(() => {
         setReportGeneration({
           status: ReportGenerationStatus.IDLE,
-          message: "",
+          message: null,
         });
       }, 3000);
     } catch (error) {
@@ -572,6 +562,17 @@ const ReportPage: React.FC = () => {
           <p className="text-teal-50">
             View and download comprehensive model analysis reports
           </p>
+
+          {/* Search Input */}
+          <div className="mt-4 relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search reports by type or hash..."
+              className="w-full max-w-md px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
+          </div>
         </div>
 
         {/* Enhanced Project Information and Download Card */}
@@ -1087,260 +1088,243 @@ const ReportPage: React.FC = () => {
         </div>
 
         {/* Report Generation Loading Modal */}
-        {reportGeneration.status !== ReportGenerationStatus.IDLE && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all relative overflow-hidden">
-              {/* Progress bar at the top */}
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gray-100">
-                <div
-                  className={`h-full ${
-                    reportGeneration.status ===
-                    ReportGenerationStatus.GENERATING
-                      ? "w-1/2 bg-teal-500 animate-pulse"
-                      : reportGeneration.status ===
-                        ReportGenerationStatus.DOWNLOADING
-                      ? "w-3/4 bg-blue-500 animate-pulse"
-                      : reportGeneration.status ===
-                        ReportGenerationStatus.COMPLETED
-                      ? "w-full bg-green-500"
-                      : reportGeneration.status === ReportGenerationStatus.ERROR
-                      ? "w-full bg-red-500"
-                      : ""
-                  }`}
-                ></div>
-              </div>
-
-              <div className="text-center">
-                {/* Different icons based on status */}
-                {reportGeneration.status ===
-                  ReportGenerationStatus.GENERATING && (
-                  <div className="mx-auto mb-6 relative w-24 h-24">
-                    {/* Data visualization animation */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 border-4 border-t-teal-500 border-r-blue-500 border-b-indigo-500 border-l-purple-500 rounded-full animate-spin"></div>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div
-                        className="w-8 h-8 border-4 border-t-teal-300 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"
-                        style={{
-                          animationDirection: "reverse",
-                          animationDuration: "0.8s",
-                        }}
-                      ></div>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <svg
-                        className="w-10 h-10 text-teal-600 animate-pulse"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-
-                {reportGeneration.status ===
-                  ReportGenerationStatus.DOWNLOADING && (
-                  <div className="mx-auto mb-6 relative w-24 h-24">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 border-4 border-blue-500 border-opacity-25 rounded-full animate-pulse"></div>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <svg
-                        className="w-10 h-10 text-blue-600"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
-                    </div>
-
-                    {/* Animated dots to show download progress */}
-                    <div className="absolute -bottom-1 left-0 right-0 flex justify-center space-x-1">
-                      <div
-                        className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                        style={{ animationDelay: "0s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-
-                {reportGeneration.status ===
-                  ReportGenerationStatus.COMPLETED && (
-                  <div className="mx-auto mb-6 relative w-24 h-24">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
-                        <svg
-                          className="w-10 h-10 text-green-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {reportGeneration.status === ReportGenerationStatus.ERROR && (
-                  <div className="mx-auto mb-6 relative w-24 h-24">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center animate-scale-in">
-                        <svg
-                          className="w-10 h-10 text-red-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {reportGeneration.status === ReportGenerationStatus.GENERATING
-                    ? "Generating Report"
-                    : reportGeneration.status ===
-                      ReportGenerationStatus.DOWNLOADING
-                    ? "Downloading Report"
-                    : reportGeneration.status ===
-                      ReportGenerationStatus.COMPLETED
-                    ? "Download Complete"
-                    : "Error"}
-                </h3>
-                <p className="text-gray-600 mb-6">{reportGeneration.message}</p>
-
-                {reportGeneration.status === ReportGenerationStatus.ERROR && (
-                  <button
-                    onClick={() =>
-                      setReportGeneration({
-                        status: ReportGenerationStatus.IDLE,
-                        message: "",
-                      })
-                    }
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-                  >
-                    Close
-                  </button>
-                )}
-              </div>
-
-              {/* Small details showing during generation */}
-              {reportGeneration.status ===
-                ReportGenerationStatus.GENERATING && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
-                      <span>Preparing data</span>
-                    </div>
-                    <span>✓</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                      <span>Calculating metrics</span>
-                    </div>
-                    <span className="animate-pulse">In progress...</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
-                      <span>Generating visualizations</span>
-                    </div>
-                    <span>Pending</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
-                      <span>Finalizing report</span>
-                    </div>
-                    <span>Pending</span>
-                  </div>
+        {reportGeneration.status !== ReportGenerationStatus.IDLE &&
+          reportGeneration.status !== ReportGenerationStatus.COMPLETED && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all relative overflow-hidden">
+                {/* Progress bar at the top */}
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gray-100">
+                  <div
+                    className={`h-full ${
+                      reportGeneration.status ===
+                      ReportGenerationStatus.GENERATING
+                        ? "w-1/2 bg-teal-500 animate-pulse"
+                        : reportGeneration.status ===
+                          ReportGenerationStatus.DOWNLOADING
+                        ? "w-3/4 bg-blue-500 animate-pulse"
+                        : reportGeneration.status ===
+                          ReportGenerationStatus.ERROR
+                        ? "w-full bg-red-500"
+                        : ""
+                    }`}
+                  ></div>
                 </div>
-              )}
 
-              {/* Small details showing during downloading */}
-              {reportGeneration.status ===
-                ReportGenerationStatus.DOWNLOADING && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
-                      <span>Report generated</span>
-                    </div>
-                    <span>✓</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
-                      <span>Data verified</span>
-                    </div>
-                    <span>✓</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                      <span>Downloading file</span>
-                    </div>
-                    <div className="flex items-center animate-pulse">
-                      <span className="mr-1">Downloading</span>
-                      <div className="flex space-x-0.5">
+                <div className="text-center">
+                  {/* Different icons based on status */}
+                  {reportGeneration.status ===
+                    ReportGenerationStatus.GENERATING && (
+                    <div className="mx-auto mb-6 relative w-24 h-24">
+                      {/* Data visualization animation */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 border-4 border-t-teal-500 border-r-blue-500 border-b-indigo-500 border-l-purple-500 rounded-full animate-spin"></div>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
                         <div
-                          className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"
+                          className="w-8 h-8 border-4 border-t-teal-300 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"
+                          style={{
+                            animationDirection: "reverse",
+                            animationDuration: "0.8s",
+                          }}
+                        ></div>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg
+                          className="w-10 h-10 text-teal-600 animate-pulse"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+
+                  {reportGeneration.status ===
+                    ReportGenerationStatus.DOWNLOADING && (
+                    <div className="mx-auto mb-6 relative w-24 h-24">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 border-4 border-blue-500 border-opacity-25 rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg
+                          className="w-10 h-10 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      </div>
+
+                      {/* Animated dots to show download progress */}
+                      <div className="absolute -bottom-1 left-0 right-0 flex justify-center space-x-1">
+                        <div
+                          className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
                           style={{ animationDelay: "0s" }}
                         ></div>
                         <div
-                          className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
                           style={{ animationDelay: "0.2s" }}
                         ></div>
                         <div
-                          className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
                           style={{ animationDelay: "0.4s" }}
                         ></div>
                       </div>
                     </div>
-                  </div>
+                  )}
+
+                  {reportGeneration.status === ReportGenerationStatus.ERROR && (
+                    <div className="mx-auto mb-6 relative w-24 h-24">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center animate-scale-in">
+                          <svg
+                            className="w-10 h-10 text-red-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {reportGeneration.status ===
+                    ReportGenerationStatus.GENERATING
+                      ? "Generating Report"
+                      : reportGeneration.status ===
+                        ReportGenerationStatus.DOWNLOADING
+                      ? "Downloading Report"
+                      : "Error"}
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    {reportGeneration.message}
+                  </p>
+
+                  {reportGeneration.status === ReportGenerationStatus.ERROR && (
+                    <button
+                      onClick={() =>
+                        setReportGeneration({
+                          status: ReportGenerationStatus.IDLE,
+                          message: null,
+                        })
+                      }
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                    >
+                      Close
+                    </button>
+                  )}
                 </div>
-              )}
+
+                {/* Small details showing during generation */}
+                {reportGeneration.status ===
+                  ReportGenerationStatus.GENERATING && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
+                        <span>Preparing data</span>
+                      </div>
+                      <span>✓</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                        <span>Calculating metrics</span>
+                      </div>
+                      <span className="animate-pulse">In progress...</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
+                        <span>Generating visualizations</span>
+                      </div>
+                      <span>Pending</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
+                        <span>Finalizing report</span>
+                      </div>
+                      <span>Pending</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Small details showing during downloading */}
+                {reportGeneration.status ===
+                  ReportGenerationStatus.DOWNLOADING && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
+                        <span>Report generated</span>
+                      </div>
+                      <span>✓</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
+                        <span>Data verified</span>
+                      </div>
+                      <span>✓</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+              <div className="text-center">
+                <div className="mx-auto mb-6 w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-12 h-12 text-green-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Download Complete
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  AI Risk Assessment report downloaded successfully!
+                </p>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    setReportGeneration({
+                      status: ReportGenerationStatus.IDLE,
+                      message: null,
+                    });
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1587,7 +1571,6 @@ const ReportPage: React.FC = () => {
           ) : null}
         </div>
       </div>
-      {isRedirecting && <LoadingOverlay />}
     </div>
   );
 };

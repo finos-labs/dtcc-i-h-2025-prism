@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
-import { FileUp as FileUpload2 } from 'lucide-react';
-import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { FileUp as FileUpload2 } from "lucide-react";
+import axios from "axios";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import AppLayout from "../components/AppLayout";
 import {
   LineChart,
@@ -22,8 +22,8 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  Cell
-} from 'recharts';
+  Cell,
+} from "recharts";
 
 // Define interface for actual API response
 interface FairnessApiResponse {
@@ -54,7 +54,7 @@ interface FairnessApiResponse {
           disparate_impact_threshold: number;
           statistical_parity_threshold: number;
         };
-      }
+      };
     };
     processing_timestamp: string;
     sensitive_features: string[];
@@ -69,9 +69,12 @@ const UploadModal = () => (
       <div className="bg-primary/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
         <FileUpload2 className="h-8 w-8 text-primary" />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-3">Upload Your Model for Fairness Analysis</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-3">
+        Upload Your Model for Fairness Analysis
+      </h2>
       <p className="text-gray-600 mb-8">
-        Upload your trained model to assess fairness metrics across different demographic groups.
+        Upload your trained model to assess fairness metrics across different
+        demographic groups.
       </p>
       <Button className="bg-primary text-white hover:bg-primary/90 px-8 py-6 text-lg shadow-lg">
         Upload Model
@@ -89,7 +92,8 @@ const FairnessPage: React.FC = () => {
   const isDummyProject = id === "dummy-1" || id === "dummy-2";
   const [hasAnalysis, setHasAnalysis] = useState(isDummyProject);
   const [loading, setLoading] = useState(!isDummyProject);
-  const [fairnessAPIData, setFairnessAPIData] = useState<FairnessApiResponse | null>(null);
+  const [fairnessAPIData, setFairnessAPIData] =
+    useState<FairnessApiResponse | null>(null);
 
   useEffect(() => {
     if (!isDummyProject) {
@@ -117,52 +121,69 @@ const FairnessPage: React.FC = () => {
 
           const modelId = modelData[0].model_id;
           const model_version = modelData[0].model_version;
-            
-          const response = await axios.get(`https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/fairness/${id}/${modelId}/${model_version}`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            }
-          });
 
-          console.log(response.data); 
-          
+          const response = await axios.get(
+            `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/fairness/${id}/${modelId}/${model_version}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          console.log(response.data);
+
           // Detailed metrics logging
-          console.log('========== Fairness Metrics Analysis ==========');
-          
+          console.log("========== Fairness Metrics Analysis ==========");
+
           // Log metrics for each sensitive feature
           if (response.data.metrics) {
-            Object.entries(response.data.metrics).forEach(([feature, metrics]: [string, any]) => {
-              console.log(`\n=== Metrics for ${feature} ===`);
-              console.log('Demographic Parity:', metrics.demographic_parity);
-              console.log('Equal Opportunity:', metrics.equal_opportunity);
-              console.log('Equalized Odds:', metrics.equalized_odds);
-              console.log('Disparate Impact:', metrics.disparate_impact);
-              console.log('Treatment Equality:', metrics.treatment_equality);
-              console.log('Statistical Parity:', metrics.statistical_parity);
-              
-              if (metrics.interpretation) {
-                console.log('\nInterpretation Thresholds:');
-                console.log('Demographic Parity Threshold:', metrics.interpretation.demographic_parity_threshold);
-                console.log('Equal Opportunity Threshold:', metrics.interpretation.equal_opportunity_threshold);
-                console.log('Disparate Impact Threshold:', metrics.interpretation.disparate_impact_threshold);
-                console.log('Statistical Parity Threshold:', metrics.interpretation.statistical_parity_threshold);
+            Object.entries(response.data.metrics).forEach(
+              ([feature, metrics]: [string, any]) => {
+                console.log(`\n=== Metrics for ${feature} ===`);
+                console.log("Demographic Parity:", metrics.demographic_parity);
+                console.log("Equal Opportunity:", metrics.equal_opportunity);
+                console.log("Equalized Odds:", metrics.equalized_odds);
+                console.log("Disparate Impact:", metrics.disparate_impact);
+                console.log("Treatment Equality:", metrics.treatment_equality);
+                console.log("Statistical Parity:", metrics.statistical_parity);
+
+                if (metrics.interpretation) {
+                  console.log("\nInterpretation Thresholds:");
+                  console.log(
+                    "Demographic Parity Threshold:",
+                    metrics.interpretation.demographic_parity_threshold
+                  );
+                  console.log(
+                    "Equal Opportunity Threshold:",
+                    metrics.interpretation.equal_opportunity_threshold
+                  );
+                  console.log(
+                    "Disparate Impact Threshold:",
+                    metrics.interpretation.disparate_impact_threshold
+                  );
+                  console.log(
+                    "Statistical Parity Threshold:",
+                    metrics.interpretation.statistical_parity_threshold
+                  );
+                }
+
+                if (metrics.statistical_tests) {
+                  console.log("\nStatistical Tests:");
+                  console.log(metrics.statistical_tests);
+                }
               }
-              
-              if (metrics.statistical_tests) {
-                console.log('\nStatistical Tests:');
-                console.log(metrics.statistical_tests);
-              }
-            });
+            );
           }
-          
+
           if (response.data.interpretation) {
-            console.log('\n=== Overall Interpretation ===');
+            console.log("\n=== Overall Interpretation ===");
             console.log(response.data.interpretation);
           }
-          
-          console.log('\n==========================================');
-          
+
+          console.log("\n==========================================");
+
           setFairnessAPIData(response.data);
           setHasAnalysis(true);
           setLoading(false);
@@ -178,48 +199,58 @@ const FairnessPage: React.FC = () => {
   }, [id, isDummyProject]);
 
   // Helper functions for data processing and visualization
-  const processMetricDataForChart = (metricObj: { [key: string]: number } | {}, metricName: string) => {
+  const processMetricDataForChart = (
+    metricObj: { [key: string]: number } | {},
+    metricName: string
+  ) => {
     if (Object.keys(metricObj).length === 0) return [];
-    
+
     return Object.entries(metricObj)
       .map(([threshold, value]) => ({
         threshold: parseFloat(threshold).toFixed(2),
-        value: typeof value === 'number' ? value : 0,
-        metric: metricName
+        value: typeof value === "number" ? value : 0,
+        metric: metricName,
       }))
       .sort((a, b) => parseFloat(a.threshold) - parseFloat(b.threshold));
   };
 
   const getMetricSummary = (metricObj: { [key: string]: number } | {}) => {
-    if (Object.keys(metricObj).length === 0) return { avg: 0, min: 0, max: 0, count: 0 };
-    
-    const values = Object.values(metricObj).filter(v => typeof v === 'number') as number[];
+    if (Object.keys(metricObj).length === 0)
+      return { avg: 0, min: 0, max: 0, count: 0 };
+
+    const values = Object.values(metricObj).filter(
+      (v) => typeof v === "number"
+    ) as number[];
     if (values.length === 0) return { avg: 0, min: 0, max: 0, count: 0 };
-    
+
     return {
       avg: values.reduce((a, b) => a + b, 0) / values.length,
       min: Math.min(...values),
       max: Math.max(...values),
-      count: values.length
+      count: values.length,
     };
   };
 
-  const getMetricStatus = (summary: { avg: number; min: number; max: number; count: number }, metricName: string, thresholds: any): 'good' | 'warning' | 'poor' => {
-    if (!thresholds || summary.count === 0) return 'good';
-    
+  const getMetricStatus = (
+    summary: { avg: number; min: number; max: number; count: number },
+    metricName: string,
+    thresholds: any
+  ): "good" | "warning" | "poor" => {
+    if (!thresholds || summary.count === 0) return "good";
+
     const threshold = thresholds[`${metricName}_threshold`];
-    if (!threshold) return 'good';
-    
+    if (!threshold) return "good";
+
     // Different metrics have different ideal ranges
-    if (metricName === 'disparate_impact') {
-      if (summary.avg >= 0.8 && summary.avg <= 1.25) return 'good';
-      if (summary.avg >= 0.7 && summary.avg <= 1.5) return 'warning';
-      return 'poor';
+    if (metricName === "disparate_impact") {
+      if (summary.avg >= 0.8 && summary.avg <= 1.25) return "good";
+      if (summary.avg >= 0.7 && summary.avg <= 1.5) return "warning";
+      return "poor";
     } else {
       const absValue = Math.abs(summary.avg);
-      if (absValue <= threshold) return 'good';
-      if (absValue <= threshold * 1.5) return 'warning';
-      return 'poor';
+      if (absValue <= threshold) return "good";
+      if (absValue <= threshold * 1.5) return "warning";
+      return "poor";
     }
   };
 
@@ -241,7 +272,9 @@ const FairnessPage: React.FC = () => {
             className="space-y-8"
           >
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Fairness Analysis</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Fairness Analysis
+              </h1>
               <p className="text-gray-500 mt-1">
                 Evaluating model fairness across demographic groups
               </p>
@@ -251,253 +284,468 @@ const FairnessPage: React.FC = () => {
               <>
                 {/* Dataset Overview */}
                 <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Dataset Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    Dataset Information
+                  </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{fairnessAPIData.metrics.dataset_info.sample_size}</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {fairnessAPIData.metrics.dataset_info.sample_size}
+                      </div>
                       <div className="text-sm text-gray-600">Sample Size</div>
                     </div>
                     <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{fairnessAPIData.metrics.dataset_info.total_features}</div>
-                      <div className="text-sm text-gray-600">Total Features</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {fairnessAPIData.metrics.dataset_info.total_features}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Total Features
+                      </div>
                     </div>
                     <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{fairnessAPIData.metrics.sensitive_features.length}</div>
-                      <div className="text-sm text-gray-600">Sensitive Features</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {fairnessAPIData.metrics.sensitive_features.length}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Sensitive Features
+                      </div>
                     </div>
                     <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{fairnessAPIData.metrics.status}</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {fairnessAPIData.metrics.status}
+                      </div>
                       <div className="text-sm text-gray-600">Status</div>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4">
-                    <h3 className="font-medium text-gray-900 mb-2">Sensitive Features Analyzed</h3>
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Sensitive Features Analyzed
+                    </h3>
                     <div className="flex flex-wrap gap-2">
-                      {fairnessAPIData.metrics.sensitive_features?.map((feature: string, index: number) => (
-                        <span 
-                          key={index}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                        >
-                          {feature}
-                        </span>
-                      ))}
+                      {fairnessAPIData.metrics.sensitive_features?.map(
+                        (feature: string, index: number) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          >
+                            {feature}
+                          </span>
+                        )
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Fairness Metrics Visualizations */}
-                {fairnessAPIData.metrics.metrics && Object.entries(fairnessAPIData.metrics.metrics).map(([feature, metrics]: [string, any]) => {
-                  const demographicParityData = processMetricDataForChart(metrics.demographic_parity, 'Demographic Parity');
-                  const equalOpportunityData = processMetricDataForChart(metrics.equal_opportunity, 'Equal Opportunity');
-                  const statisticalParityData = processMetricDataForChart(metrics.statistical_parity, 'Statistical Parity');
-                  
-                  // Combine data for multi-line chart
-                  const combinedData = demographicParityData.map((item, index) => ({
-                    threshold: item.threshold,
-                    demographicParity: item.value,
-                    equalOpportunity: equalOpportunityData[index]?.value || 0,
-                    statisticalParity: statisticalParityData[index]?.value || 0
-                  }));
+                {fairnessAPIData.metrics.metrics &&
+                  Object.entries(fairnessAPIData.metrics.metrics).map(
+                    ([feature, metrics]: [string, any]) => {
+                      const demographicParityData = processMetricDataForChart(
+                        metrics.demographic_parity,
+                        "Demographic Parity"
+                      );
+                      const equalOpportunityData = processMetricDataForChart(
+                        metrics.equal_opportunity,
+                        "Equal Opportunity"
+                      );
+                      const statisticalParityData = processMetricDataForChart(
+                        metrics.statistical_parity,
+                        "Statistical Parity"
+                      );
 
-                  // Get metric summaries for overview cards
-                  const dpSummary = getMetricSummary(metrics.demographic_parity);
-                  const eoSummary = getMetricSummary(metrics.equal_opportunity);
-                  const diSummary = getMetricSummary(metrics.disparate_impact);
-                  const spSummary = getMetricSummary(metrics.statistical_parity);
+                      // Combine data for multi-line chart
+                      const combinedData = demographicParityData.map(
+                        (item, index) => ({
+                          threshold: item.threshold,
+                          demographicParity: item.value,
+                          equalOpportunity:
+                            equalOpportunityData[index]?.value || 0,
+                          statisticalParity:
+                            statisticalParityData[index]?.value || 0,
+                        })
+                      );
 
-                  return (
-                    <div key={feature} className="bg-white rounded-xl p-6 shadow-md border border-gray-100 space-y-6">
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                        Fairness Analysis for: <span >{feature}</span>
-                      </h2>
+                      // Get metric summaries for overview cards
+                      const dpSummary = getMetricSummary(
+                        metrics.demographic_parity
+                      );
+                      const eoSummary = getMetricSummary(
+                        metrics.equal_opportunity
+                      );
+                      const diSummary = getMetricSummary(
+                        metrics.disparate_impact
+                      );
+                      const spSummary = getMetricSummary(
+                        metrics.statistical_parity
+                      );
 
-                      {/* Overview Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium text-gray-900 text-sm">Demographic Parity</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              getMetricStatus(dpSummary, 'demographic_parity', metrics.interpretation) === 'good' 
-                                ? 'bg-green-100 text-green-800' 
-                                : getMetricStatus(dpSummary, 'demographic_parity', metrics.interpretation) === 'warning'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {getMetricStatus(dpSummary, 'demographic_parity', metrics.interpretation)}
-                            </span>
-                          </div>
-                          <p className="text-lg font-bold text-gray-900">{dpSummary.avg.toFixed(4)}</p>
-                          <p className="text-xs text-gray-500">Avg across {dpSummary.count} thresholds</p>
-                        </div>
+                      return (
+                        <div
+                          key={feature}
+                          className="bg-white rounded-xl p-6 shadow-md border border-gray-100 space-y-6"
+                        >
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                            Fairness Analysis for: <span>{feature}</span>
+                          </h2>
 
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium text-gray-900 text-sm">Equal Opportunity</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              getMetricStatus(eoSummary, 'equal_opportunity', metrics.interpretation) === 'good' 
-                                ? 'bg-green-100 text-green-800' 
-                                : getMetricStatus(eoSummary, 'equal_opportunity', metrics.interpretation) === 'warning'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {getMetricStatus(eoSummary, 'equal_opportunity', metrics.interpretation)}
-                            </span>
-                          </div>
-                          <p className="text-lg font-bold text-gray-900">{eoSummary.avg.toFixed(4)}</p>
-                          <p className="text-xs text-gray-500">Avg across {eoSummary.count} thresholds</p>
-                        </div>
-
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium text-gray-900 text-sm">Disparate Impact</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              getMetricStatus(diSummary, 'disparate_impact', metrics.interpretation) === 'good' 
-                                ? 'bg-green-100 text-green-800' 
-                                : getMetricStatus(diSummary, 'disparate_impact', metrics.interpretation) === 'warning'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {getMetricStatus(diSummary, 'disparate_impact', metrics.interpretation)}
-                            </span>
-                          </div>
-                          <p className="text-lg font-bold text-gray-900">{diSummary.count > 0 ? diSummary.avg.toFixed(4) : 'No data'}</p>
-                          <p className="text-xs text-gray-500">{diSummary.count > 0 ? `Avg across ${diSummary.count} thresholds` : 'No threshold data'}</p>
-                        </div>
-
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium text-gray-900 text-sm">Statistical Parity</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              getMetricStatus(spSummary, 'statistical_parity', metrics.interpretation) === 'good' 
-                                ? 'bg-green-100 text-green-800' 
-                                : getMetricStatus(spSummary, 'statistical_parity', metrics.interpretation) === 'warning'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {getMetricStatus(spSummary, 'statistical_parity', metrics.interpretation)}
-                            </span>
-                          </div>
-                          <p className="text-lg font-bold text-gray-900">{spSummary.avg.toFixed(4)}</p>
-                          <p className="text-xs text-gray-500">Avg across {spSummary.count} thresholds</p>
-                        </div>
-                      </div>
-
-                      {/* Line Chart - Metrics across Thresholds */}
-                      {combinedData.length > 0 && (
-                        <div className="mb-6">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Fairness Metrics Across Thresholds</h3>
-                          <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={combinedData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                  dataKey="threshold" 
-                                  label={{ value: 'Threshold', position: 'insideBottom', offset: -5 }}
-                                />
-                                <YAxis label={{ value: 'Metric Value', angle: -90, position: 'insideLeft' }} />
-                                <Tooltip />
-                                <Legend />
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="demographicParity" 
-                                  stroke="#3B82F6" 
-                                  name="Demographic Parity"
-                                  strokeWidth={2}
-                                />
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="equalOpportunity" 
-                                  stroke="#EF4444" 
-                                  name="Equal Opportunity"
-                                  strokeWidth={2}
-                                />
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="statisticalParity" 
-                                  stroke="#10B981" 
-                                  name="Statistical Parity"
-                                  strokeWidth={2}
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-2">
-                            This chart shows how fairness metrics vary across different threshold values. 
-                            Values closer to 0 generally indicate better fairness.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Bar Chart - Metric Summary Comparison */}
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Metric Summary Comparison</h3>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[
-                              { metric: 'Demographic Parity', average: dpSummary.avg, min: dpSummary.min, max: dpSummary.max },
-                              { metric: 'Equal Opportunity', average: eoSummary.avg, min: eoSummary.min, max: eoSummary.max },
-                              { metric: 'Statistical Parity', average: spSummary.avg, min: spSummary.min, max: spSummary.max }
-                            ]}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="metric" />
-                              <YAxis />
-                              <Tooltip />
-                              <Legend />
-                              <Bar dataKey="average" fill="#3B82F6" name="Average" />
-                              <Bar dataKey="min" fill="#93C5FD" name="Minimum" />
-                              <Bar dataKey="max" fill="#1E40AF" name="Maximum" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-
-                      {/* Thresholds Information */}
-                      {metrics.interpretation && (
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                          <h4 className="font-medium text-gray-900 mb-3">Fairness Thresholds</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-600">Demographic Parity:</span>
-                              <span className="ml-2 font-medium">{metrics.interpretation.demographic_parity_threshold}</span>
+                          {/* Overview Cards */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div className="p-4 border border-gray-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium text-gray-900 text-sm">
+                                  Demographic Parity
+                                </h3>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-medium ${
+                                    getMetricStatus(
+                                      dpSummary,
+                                      "demographic_parity",
+                                      metrics.interpretation
+                                    ) === "good"
+                                      ? "bg-green-100 text-green-800"
+                                      : getMetricStatus(
+                                          dpSummary,
+                                          "demographic_parity",
+                                          metrics.interpretation
+                                        ) === "warning"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {getMetricStatus(
+                                    dpSummary,
+                                    "demographic_parity",
+                                    metrics.interpretation
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-900">
+                                {dpSummary.avg.toFixed(4)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Avg across {dpSummary.count} thresholds
+                              </p>
                             </div>
-                            <div>
-                              <span className="text-gray-600">Equal Opportunity:</span>
-                              <span className="ml-2 font-medium">{metrics.interpretation.equal_opportunity_threshold}</span>
+
+                            <div className="p-4 border border-gray-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium text-gray-900 text-sm">
+                                  Equal Opportunity
+                                </h3>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-medium ${
+                                    getMetricStatus(
+                                      eoSummary,
+                                      "equal_opportunity",
+                                      metrics.interpretation
+                                    ) === "good"
+                                      ? "bg-green-100 text-green-800"
+                                      : getMetricStatus(
+                                          eoSummary,
+                                          "equal_opportunity",
+                                          metrics.interpretation
+                                        ) === "warning"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {getMetricStatus(
+                                    eoSummary,
+                                    "equal_opportunity",
+                                    metrics.interpretation
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-900">
+                                {eoSummary.avg.toFixed(4)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Avg across {eoSummary.count} thresholds
+                              </p>
                             </div>
-                            <div>
-                              <span className="text-gray-600">Disparate Impact:</span>
-                              <span className="ml-2 font-medium">{metrics.interpretation.disparate_impact_threshold}</span>
+
+                            <div className="p-4 border border-gray-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium text-gray-900 text-sm">
+                                  Disparate Impact
+                                </h3>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-medium ${
+                                    getMetricStatus(
+                                      diSummary,
+                                      "disparate_impact",
+                                      metrics.interpretation
+                                    ) === "good"
+                                      ? "bg-green-100 text-green-800"
+                                      : getMetricStatus(
+                                          diSummary,
+                                          "disparate_impact",
+                                          metrics.interpretation
+                                        ) === "warning"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {getMetricStatus(
+                                    diSummary,
+                                    "disparate_impact",
+                                    metrics.interpretation
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-900">
+                                {diSummary.count > 0
+                                  ? diSummary.avg.toFixed(4)
+                                  : "No data"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {diSummary.count > 0
+                                  ? `Avg across ${diSummary.count} thresholds`
+                                  : "No threshold data"}
+                              </p>
                             </div>
-                            <div>
-                              <span className="text-gray-600">Statistical Parity:</span>
-                              <span className="ml-2 font-medium">{metrics.interpretation.statistical_parity_threshold}</span>
+
+                            <div className="p-4 border border-gray-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium text-gray-900 text-sm">
+                                  Statistical Parity
+                                </h3>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-medium ${
+                                    getMetricStatus(
+                                      spSummary,
+                                      "statistical_parity",
+                                      metrics.interpretation
+                                    ) === "good"
+                                      ? "bg-green-100 text-green-800"
+                                      : getMetricStatus(
+                                          spSummary,
+                                          "statistical_parity",
+                                          metrics.interpretation
+                                        ) === "warning"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {getMetricStatus(
+                                    spSummary,
+                                    "statistical_parity",
+                                    metrics.interpretation
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-900">
+                                {spSummary.avg.toFixed(4)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Avg across {spSummary.count} thresholds
+                              </p>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Values within these thresholds are considered acceptable for fairness.
-                          </p>
+
+                          {/* Line Chart - Metrics across Thresholds */}
+                          {combinedData.length > 0 && (
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                Fairness Metrics Across Thresholds
+                              </h3>
+                              <div className="h-80">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={combinedData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis
+                                      dataKey="threshold"
+                                      label={{
+                                        value: "Threshold",
+                                        position: "insideBottom",
+                                        offset: -5,
+                                      }}
+                                    />
+                                    <YAxis
+                                      label={{
+                                        value: "Metric Value",
+                                        angle: -90,
+                                        position: "insideLeft",
+                                      }}
+                                    />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line
+                                      type="monotone"
+                                      dataKey="demographicParity"
+                                      stroke="#3B82F6"
+                                      name="Demographic Parity"
+                                      strokeWidth={2}
+                                    />
+                                    <Line
+                                      type="monotone"
+                                      dataKey="equalOpportunity"
+                                      stroke="#EF4444"
+                                      name="Equal Opportunity"
+                                      strokeWidth={2}
+                                    />
+                                    <Line
+                                      type="monotone"
+                                      dataKey="statisticalParity"
+                                      stroke="#10B981"
+                                      name="Statistical Parity"
+                                      strokeWidth={2}
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">
+                                This chart shows how fairness metrics vary
+                                across different threshold values. Values closer
+                                to 0 generally indicate better fairness.
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Bar Chart - Metric Summary Comparison */}
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                              Metric Summary Comparison
+                            </h3>
+                            <div className="h-64">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                  data={[
+                                    {
+                                      metric: "Demographic Parity",
+                                      average: dpSummary.avg,
+                                      min: dpSummary.min,
+                                      max: dpSummary.max,
+                                    },
+                                    {
+                                      metric: "Equal Opportunity",
+                                      average: eoSummary.avg,
+                                      min: eoSummary.min,
+                                      max: eoSummary.max,
+                                    },
+                                    {
+                                      metric: "Statistical Parity",
+                                      average: spSummary.avg,
+                                      min: spSummary.min,
+                                      max: spSummary.max,
+                                    },
+                                  ]}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="metric" />
+                                  <YAxis />
+                                  <Tooltip />
+                                  <Legend />
+                                  <Bar
+                                    dataKey="average"
+                                    fill="#3B82F6"
+                                    name="Average"
+                                  />
+                                  <Bar
+                                    dataKey="min"
+                                    fill="#93C5FD"
+                                    name="Minimum"
+                                  />
+                                  <Bar
+                                    dataKey="max"
+                                    fill="#1E40AF"
+                                    name="Maximum"
+                                  />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+
+                          {/* Thresholds Information */}
+                          {metrics.interpretation && (
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <h4 className="font-medium text-gray-900 mb-3">
+                                Fairness Thresholds
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-600">
+                                    Demographic Parity:
+                                  </span>
+                                  <span className="ml-2 font-medium">
+                                    {
+                                      metrics.interpretation
+                                        .demographic_parity_threshold
+                                    }
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">
+                                    Equal Opportunity:
+                                  </span>
+                                  <span className="ml-2 font-medium">
+                                    {
+                                      metrics.interpretation
+                                        .equal_opportunity_threshold
+                                    }
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">
+                                    Disparate Impact:
+                                  </span>
+                                  <span className="ml-2 font-medium">
+                                    {
+                                      metrics.interpretation
+                                        .disparate_impact_threshold
+                                    }
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">
+                                    Statistical Parity:
+                                  </span>
+                                  <span className="ml-2 font-medium">
+                                    {
+                                      metrics.interpretation
+                                        .statistical_parity_threshold
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Values within these thresholds are considered
+                                acceptable for fairness.
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    }
+                  )}
 
                 {/* Processing Information */}
                 <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Processing Details</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    Processing Details
+                  </h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Model:</span>
-                      <span className="ml-2 font-medium">{fairnessAPIData.model_name} v{fairnessAPIData.model_version}</span>
+                      <span className="ml-2 font-medium">
+                        {fairnessAPIData.model_name} v
+                        {fairnessAPIData.model_version}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Project ID:</span>
-                      <span className="ml-2 font-medium">{fairnessAPIData.project_id}</span>
+                      <span className="ml-2 font-medium">
+                        {fairnessAPIData.project_id}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Processed:</span>
-                      <span className="ml-2 font-medium">{new Date(fairnessAPIData.metrics.processing_timestamp).toLocaleString()}</span>
+                      <span className="ml-2 font-medium">
+                        {new Date(
+                          fairnessAPIData.metrics.processing_timestamp
+                        ).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -527,8 +775,9 @@ const FairnessPage: React.FC = () => {
               No Fairness Analysis Available
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-              Upload your model to analyze its fairness metrics across different demographic groups. 
-              Our system will evaluate bias and discrimination patterns to help ensure equitable AI decisions.
+              Upload your model to analyze its fairness metrics across different
+              demographic groups. Our system will evaluate bias and
+              discrimination patterns to help ensure equitable AI decisions.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -631,8 +880,9 @@ const FairnessPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <p className="text-gray-700 mb-4">
-                    Fairness analysis ensures your AI system treats all groups equitably
-                    and doesn't perpetuate harmful biases. By evaluating fairness metrics, you can:
+                    Fairness analysis ensures your AI system treats all groups
+                    equitably and doesn't perpetuate harmful biases. By
+                    evaluating fairness metrics, you can:
                   </p>
                   <ul className="space-y-2">
                     <li className="flex items-start">
@@ -711,31 +961,36 @@ const FairnessPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-gray-700 mb-4">
-                    Our comprehensive fairness assessment includes multiple metrics:
+                    Our comprehensive fairness assessment includes multiple
+                    metrics:
                   </p>
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
                       <span className="text-gray-600">
-                        <strong>Demographic Parity:</strong> Equal positive prediction rates
+                        <strong>Demographic Parity:</strong> Equal positive
+                        prediction rates
                       </span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
                       <span className="text-gray-600">
-                        <strong>Equal Opportunity:</strong> Equal true positive rates
+                        <strong>Equal Opportunity:</strong> Equal true positive
+                        rates
                       </span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
                       <span className="text-gray-600">
-                        <strong>Disparate Impact:</strong> Ratio of selection rates
+                        <strong>Disparate Impact:</strong> Ratio of selection
+                        rates
                       </span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
                       <span className="text-gray-600">
-                        <strong>Statistical Tests:</strong> Significance testing for bias
+                        <strong>Statistical Tests:</strong> Significance testing
+                        for bias
                       </span>
                     </div>
                   </div>

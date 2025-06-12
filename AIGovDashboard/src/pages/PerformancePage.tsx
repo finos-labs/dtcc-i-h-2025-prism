@@ -168,7 +168,7 @@ const MetricCard = ({
         data={{
           value: value,
           status: status,
-          description: description
+          description: description,
         }}
       />
     </div>
@@ -361,10 +361,9 @@ const ROCCurveChart = ({
   aucValue?: number;
 }) => {
   // Ensure aucValue is properly formatted - transform to 0-1 scale if needed
-  const normalizedAucValue = aucValue !== undefined && aucValue > 1 
-    ? aucValue / 100 
-    : aucValue;
-  
+  const normalizedAucValue =
+    aucValue !== undefined && aucValue > 1 ? aucValue / 100 : aucValue;
+
   // Dynamically create the name for the legend to include the AUC value if available
   const curveLabel = `ROC Curve ${
     normalizedAucValue ? `(AUC=${normalizedAucValue.toFixed(3)})` : ""
@@ -704,7 +703,7 @@ const formatRocCurve = (rocCurve: any) => {
 
   // Get the first class key (usually 'class_0', 'class_1', etc.)
   const classKeys = Object.keys(rocCurve);
-  
+
   // If there are no class keys, use default values
   if (classKeys.length === 0) {
     return Array.from({ length: 11 }, (_, i) => ({
@@ -713,7 +712,7 @@ const formatRocCurve = (rocCurve: any) => {
       random: i * 0.1,
     }));
   }
-  
+
   // Prefer class_1 if available (typically the positive class)
   const selectedClass = classKeys.includes("class_1")
     ? "class_1"
@@ -874,12 +873,12 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
   try {
     // Extract the metrics object from the API response
     const metricsData = data.metrics || {};
-    
+
     // Check if this is a regression model
-    const isRegression = 
-      (data.model_info?.type === "regression") || 
-      (metricsData.model_info?.type === "regression");
-    
+    const isRegression =
+      data.model_info?.type === "regression" ||
+      metricsData.model_info?.type === "regression";
+
     if (isRegression) {
       // Extract regression metrics
       const regression_metrics = {
@@ -888,14 +887,14 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
         mae: metricsData.basic_metrics?.mae || 0,
         r2: metricsData.basic_metrics?.r2 || 0,
       };
-      
+
       // Extract residual analysis data
       const residual_analysis = metricsData.residual_analysis || {
         mean_residual: 0,
         std_residual: 0,
         residuals: [],
       };
-      
+
       return {
         // Include other common properties
         metrics: defaultData.metrics,
@@ -905,7 +904,8 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
         modelInfo: {
           type: metricsData.model_info?.type || "regression",
           name: data.model_name || metricsData.model_info?.name || "unknown",
-          version: data.model_version || metricsData.model_info?.version || "0.0.0",
+          version:
+            data.model_version || metricsData.model_info?.version || "0.0.0",
         },
         dataInfo: metricsData.data_info || defaultData.dataInfo,
         learningCurve: formatLearningCurve(metricsData.learning_curve),
@@ -923,11 +923,11 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
     } else {
       // Extract AUC-ROC value from different possible locations in the response
       let aucRocValue = 0;
-      
+
       // Try direct auc field first
       if (metricsData.basic_metrics?.auc !== undefined) {
         aucRocValue = metricsData.basic_metrics.auc;
-      } 
+      }
       // Then try roc_auc field
       else if (metricsData.basic_metrics?.roc_auc !== undefined) {
         aucRocValue = metricsData.basic_metrics.roc_auc;
@@ -936,13 +936,13 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
       else {
         aucRocValue = calculateAverageAUC(metricsData.roc_curve);
       }
-      
+
       // Make sure we convert to percentage (0-100 scale)
       aucRocValue = aucRocValue * 100;
-      
+
       // Log to debug
       console.log("AUC-ROC Value:", aucRocValue);
-      
+
       // Handle classification metrics
       const metrics = {
         accuracy: metricsData.basic_metrics?.accuracy * 100 || 0,
@@ -952,9 +952,13 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
         // Use the extracted AUC-ROC value
         aucRoc: aucRocValue,
         status: {
-          accuracy: getMetricStatus(metricsData.basic_metrics?.accuracy * 100 || 0),
+          accuracy: getMetricStatus(
+            metricsData.basic_metrics?.accuracy * 100 || 0
+          ),
           f1Score: getMetricStatus(metricsData.basic_metrics?.f1 * 100 || 0),
-          precision: getMetricStatus(metricsData.basic_metrics?.precision * 100 || 0),
+          precision: getMetricStatus(
+            metricsData.basic_metrics?.precision * 100 || 0
+          ),
           recall: getMetricStatus(metricsData.basic_metrics?.recall * 100 || 0),
           aucRoc: getMetricStatus(aucRocValue),
         },
@@ -969,7 +973,8 @@ const formatPerformanceData = (data: any): PerformanceMetrics => {
         modelInfo: {
           type: metricsData.model_info?.type || "unknown",
           name: data.model_name || metricsData.model_info?.name || "unknown",
-          version: data.model_version || metricsData.model_info?.version || "0.0.0",
+          version:
+            data.model_version || metricsData.model_info?.version || "0.0.0",
         },
         dataInfo: metricsData.data_info || defaultData.dataInfo,
         cross_validation: {
@@ -1036,7 +1041,13 @@ const ModelInfoCard = ({ data }: { data: any }) => (
 );
 
 // New component: Data Info Card
-const DataInfoCard = ({ data, isRegression }: { data: any, isRegression: boolean }) => (
+const DataInfoCard = ({
+  data,
+  isRegression,
+}: {
+  data: any;
+  isRegression: boolean;
+}) => (
   <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 h-full">
     <h3 className="text-lg font-medium text-gray-900 mb-3">
       Dataset Information
@@ -1113,15 +1124,17 @@ const RegressionMetricCard = ({
           value: value,
           status: status,
           description: description,
-          isPercentage: isPercentage
+          isPercentage: isPercentage,
         }}
       />
     </div>
     <div className="flex flex-wrap items-baseline gap-2">
       <span className="text-3xl font-bold text-gray-900 break-all">
-        {isPercentage ? 
-          (value * 100).toFixed(2) + "%" : 
-          value.toFixed(Math.abs(value) < 0.01 ? 4 : Math.abs(value) < 1 ? 3 : 2) + (unit ? " " + unit : "")}
+        {isPercentage
+          ? (value * 100).toFixed(2) + "%"
+          : value.toFixed(
+              Math.abs(value) < 0.01 ? 4 : Math.abs(value) < 1 ? 3 : 2
+            ) + (unit ? " " + unit : "")}
       </span>
       <span
         className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
@@ -1616,7 +1629,8 @@ const PerformancePage: React.FC = () => {
   }
 
   // Use properly formatted performance data
-  const dataToDisplay = performanceMetrics || formatPerformanceData(performanceData);
+  const dataToDisplay =
+    performanceMetrics || formatPerformanceData(performanceData);
 
   // Return just the content without wrapping in AppLayout
   // This assumes that this page is rendered within a layout at the router level
@@ -1627,8 +1641,6 @@ const PerformancePage: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="p-8 space-y-8"
     >
-    
-
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
           Performance Analysis
@@ -1641,7 +1653,10 @@ const PerformancePage: React.FC = () => {
       {/* Model and Data Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ModelInfoCard data={dataToDisplay.modelInfo} />
-        <DataInfoCard data={dataToDisplay.dataInfo} isRegression={dataToDisplay.isRegression} />
+        <DataInfoCard
+          data={dataToDisplay.dataInfo}
+          isRegression={dataToDisplay.isRegression}
+        />
       </div>
 
       {/* Key Metrics Section - Conditional rendering based on model type */}
@@ -1656,7 +1671,10 @@ const PerformancePage: React.FC = () => {
               <RegressionMetricCard
                 title="MSE"
                 value={dataToDisplay.regression_metrics.mse}
-                status={getErrorMetricStatus(dataToDisplay.regression_metrics.mse, 'MSE')}
+                status={getErrorMetricStatus(
+                  dataToDisplay.regression_metrics.mse,
+                  "MSE"
+                )}
                 description="Mean Squared Error - Average of squared differences between predicted and actual values"
                 infoData={dataToDisplay.regression_metrics}
               />
@@ -1668,7 +1686,10 @@ const PerformancePage: React.FC = () => {
               <RegressionMetricCard
                 title="RMSE"
                 value={dataToDisplay.regression_metrics.rmse}
-                status={getErrorMetricStatus(dataToDisplay.regression_metrics.rmse, 'RMSE')}
+                status={getErrorMetricStatus(
+                  dataToDisplay.regression_metrics.rmse,
+                  "RMSE"
+                )}
                 description="Root Mean Squared Error - Square root of MSE"
                 infoData={dataToDisplay.regression_metrics}
               />
@@ -1680,7 +1701,10 @@ const PerformancePage: React.FC = () => {
               <RegressionMetricCard
                 title="MAE"
                 value={dataToDisplay.regression_metrics.mae}
-                status={getErrorMetricStatus(dataToDisplay.regression_metrics.mae, 'MAE')}
+                status={getErrorMetricStatus(
+                  dataToDisplay.regression_metrics.mae,
+                  "MAE"
+                )}
                 description="Mean Absolute Error - Average of absolute differences between predicted and actual values"
                 infoData={dataToDisplay.regression_metrics}
               />
@@ -1709,7 +1733,9 @@ const PerformancePage: React.FC = () => {
               <MetricCard
                 title="Accuracy"
                 value={dataToDisplay.metrics?.accuracy || 0}
-                status={dataToDisplay.metrics?.status?.accuracy || "Not Available"}
+                status={
+                  dataToDisplay.metrics?.status?.accuracy || "Not Available"
+                }
                 description="Overall prediction accuracy"
                 infoData={dataToDisplay.metrics}
               />
@@ -1721,7 +1747,9 @@ const PerformancePage: React.FC = () => {
               <MetricCard
                 title="Precision"
                 value={dataToDisplay.metrics?.precision || 0}
-                status={dataToDisplay.metrics?.status?.precision || "Not Available"}
+                status={
+                  dataToDisplay.metrics?.status?.precision || "Not Available"
+                }
                 description="Positive predictive value"
                 infoData={dataToDisplay.metrics}
               />
@@ -1733,7 +1761,9 @@ const PerformancePage: React.FC = () => {
               <MetricCard
                 title="Recall"
                 value={dataToDisplay.metrics?.recall || 0}
-                status={dataToDisplay.metrics?.status?.recall || "Not Available"}
+                status={
+                  dataToDisplay.metrics?.status?.recall || "Not Available"
+                }
                 description="True positive rate"
                 infoData={dataToDisplay.metrics}
               />
@@ -1745,7 +1775,9 @@ const PerformancePage: React.FC = () => {
               <MetricCard
                 title="F1 Score"
                 value={dataToDisplay.metrics?.f1Score || 0}
-                status={dataToDisplay.metrics?.status?.f1Score || "Not Available"}
+                status={
+                  dataToDisplay.metrics?.status?.f1Score || "Not Available"
+                }
                 description="Harmonic mean of precision and recall"
                 infoData={dataToDisplay.metrics}
               />
@@ -1757,7 +1789,9 @@ const PerformancePage: React.FC = () => {
               <MetricCard
                 title="AUC-ROC"
                 value={dataToDisplay.metrics?.aucRoc || 0}
-                status={dataToDisplay.metrics?.status?.aucRoc || "Not Available"}
+                status={
+                  dataToDisplay.metrics?.status?.aucRoc || "Not Available"
+                }
                 description="Area under ROC curve"
                 infoData={dataToDisplay.metrics}
               />
@@ -1785,9 +1819,11 @@ const PerformancePage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <ResidualPlot residuals={dataToDisplay.residual_analysis.residuals} />
+            <ResidualPlot
+              residuals={dataToDisplay.residual_analysis.residuals}
+            />
           </motion.div>
-          
+
           {/* Residual Statistics */}
           <motion.div
             whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
@@ -1857,7 +1893,6 @@ const PerformancePage: React.FC = () => {
                   Model prediction correctness
                 </p>
               </div>
-      
             </div>
             <ConfusionMatrixChart data={dataToDisplay.confusionMatrix || []} />
           </motion.div>
@@ -1881,7 +1916,11 @@ const PerformancePage: React.FC = () => {
                 title="Class Distribution"
                 entityType="chart"
                 entityName="Class Distribution"
-                data={{ chartData: Object.entries(dataToDisplay.dataInfo?.class_distribution || {}).map(([key, value]) => ({ name: key, value })) }}
+                data={{
+                  chartData: Object.entries(
+                    dataToDisplay.dataInfo?.class_distribution || {}
+                  ).map(([key, value]) => ({ name: key, value })),
+                }}
               />
             </div>
             <ClassDistributionChart
@@ -1902,7 +1941,9 @@ const PerformancePage: React.FC = () => {
           >
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">ROC Curve</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  ROC Curve
+                </h2>
                 <p className="text-sm text-gray-500">
                   True positive rate vs false positive rate
                 </p>
@@ -1911,8 +1952,8 @@ const PerformancePage: React.FC = () => {
                 title="ROC Curve"
                 entityType="chart"
                 entityName="ROC Curve"
-                data={{ 
-                  chartData: dataToDisplay.rocCurve || []
+                data={{
+                  chartData: dataToDisplay.rocCurve || [],
                 }}
               />
             </div>
@@ -1922,12 +1963,14 @@ const PerformancePage: React.FC = () => {
             />
           </motion.div>
         )}
-        
+
         {/* Learning Curve - Always show */}
         <motion.div
           whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
           transition={{ duration: 0.3 }}
-          className={`bg-white rounded-xl p-6 shadow-md border border-gray-100 ${dataToDisplay.isRegression ? 'md:col-span-2' : ''}`}
+          className={`bg-white rounded-xl p-6 shadow-md border border-gray-100 ${
+            dataToDisplay.isRegression ? "md:col-span-2" : ""
+          }`}
         >
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -1942,16 +1985,30 @@ const PerformancePage: React.FC = () => {
               title="Learning Curves"
               entityType="chart"
               entityName="Learning Curves"
-              data={{ 
-                chartData: (dataToDisplay.learningCurve?.trainSizes || []).map((size, index) => ({
-                  size,
-                  trainScore: (dataToDisplay.learningCurve?.trainScores || [])[index] || 0,
-                  testScore: (dataToDisplay.learningCurve?.testScores || [])[index] || 0
-                }))
+              data={{
+                chartData: (dataToDisplay.learningCurve?.trainSizes || []).map(
+                  (size, index) => ({
+                    size,
+                    trainScore:
+                      (dataToDisplay.learningCurve?.trainScores || [])[index] ||
+                      0,
+                    testScore:
+                      (dataToDisplay.learningCurve?.testScores || [])[index] ||
+                      0,
+                  })
+                ),
               }}
             />
           </div>
-          <LearningCurveChart data={dataToDisplay.learningCurve || { trainSizes: [], trainScores: [], testScores: [] }} />
+          <LearningCurveChart
+            data={
+              dataToDisplay.learningCurve || {
+                trainSizes: [],
+                trainScores: [],
+                testScores: [],
+              }
+            }
+          />
         </motion.div>
       </div>
 
@@ -2005,8 +2062,6 @@ const PerformancePage: React.FC = () => {
     </motion.div>
   ) : (
     <div className="p-8">
-    
-
       <div className="mt-8">
         {models.length > 0 ? (
           <motion.div
@@ -2027,7 +2082,10 @@ const PerformancePage: React.FC = () => {
             {/* Model and Data Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ModelInfoCard data={dataToDisplay.modelInfo} />
-              <DataInfoCard data={dataToDisplay.dataInfo} isRegression={dataToDisplay.isRegression} />
+              <DataInfoCard
+                data={dataToDisplay.dataInfo}
+                isRegression={dataToDisplay.isRegression}
+              />
             </div>
 
             {/* Key Metrics Section - Conditional rendering based on model type */}
@@ -2042,7 +2100,10 @@ const PerformancePage: React.FC = () => {
                     <RegressionMetricCard
                       title="MSE"
                       value={dataToDisplay.regression_metrics.mse}
-                      status={getErrorMetricStatus(dataToDisplay.regression_metrics.mse, 'MSE')}
+                      status={getErrorMetricStatus(
+                        dataToDisplay.regression_metrics.mse,
+                        "MSE"
+                      )}
                       description="Mean Squared Error - Average of squared differences between predicted and actual values"
                       infoData={dataToDisplay.regression_metrics}
                     />
@@ -2054,7 +2115,10 @@ const PerformancePage: React.FC = () => {
                     <RegressionMetricCard
                       title="RMSE"
                       value={dataToDisplay.regression_metrics.rmse}
-                      status={getErrorMetricStatus(dataToDisplay.regression_metrics.rmse, 'RMSE')}
+                      status={getErrorMetricStatus(
+                        dataToDisplay.regression_metrics.rmse,
+                        "RMSE"
+                      )}
                       description="Root Mean Squared Error - Square root of MSE"
                       infoData={dataToDisplay.regression_metrics}
                     />
@@ -2066,7 +2130,10 @@ const PerformancePage: React.FC = () => {
                     <RegressionMetricCard
                       title="MAE"
                       value={dataToDisplay.regression_metrics.mae}
-                      status={getErrorMetricStatus(dataToDisplay.regression_metrics.mae, 'MAE')}
+                      status={getErrorMetricStatus(
+                        dataToDisplay.regression_metrics.mae,
+                        "MAE"
+                      )}
                       description="Mean Absolute Error - Average of absolute differences between predicted and actual values"
                       infoData={dataToDisplay.regression_metrics}
                     />
@@ -2095,7 +2162,10 @@ const PerformancePage: React.FC = () => {
                     <MetricCard
                       title="Accuracy"
                       value={dataToDisplay.metrics?.accuracy || 0}
-                      status={dataToDisplay.metrics?.status?.accuracy || "Not Available"}
+                      status={
+                        dataToDisplay.metrics?.status?.accuracy ||
+                        "Not Available"
+                      }
                       description="Overall prediction accuracy"
                       infoData={dataToDisplay.metrics}
                     />
@@ -2107,7 +2177,10 @@ const PerformancePage: React.FC = () => {
                     <MetricCard
                       title="Precision"
                       value={dataToDisplay.metrics?.precision || 0}
-                      status={dataToDisplay.metrics?.status?.precision || "Not Available"}
+                      status={
+                        dataToDisplay.metrics?.status?.precision ||
+                        "Not Available"
+                      }
                       description="Positive predictive value"
                       infoData={dataToDisplay.metrics}
                     />
@@ -2119,7 +2192,9 @@ const PerformancePage: React.FC = () => {
                     <MetricCard
                       title="Recall"
                       value={dataToDisplay.metrics?.recall || 0}
-                      status={dataToDisplay.metrics?.status?.recall || "Not Available"}
+                      status={
+                        dataToDisplay.metrics?.status?.recall || "Not Available"
+                      }
                       description="True positive rate"
                       infoData={dataToDisplay.metrics}
                     />
@@ -2131,7 +2206,10 @@ const PerformancePage: React.FC = () => {
                     <MetricCard
                       title="F1 Score"
                       value={dataToDisplay.metrics?.f1Score || 0}
-                      status={dataToDisplay.metrics?.status?.f1Score || "Not Available"}
+                      status={
+                        dataToDisplay.metrics?.status?.f1Score ||
+                        "Not Available"
+                      }
                       description="Harmonic mean of precision and recall"
                       infoData={dataToDisplay.metrics}
                     />
@@ -2143,7 +2221,9 @@ const PerformancePage: React.FC = () => {
                     <MetricCard
                       title="AUC-ROC"
                       value={dataToDisplay.metrics?.aucRoc || 0}
-                      status={dataToDisplay.metrics?.status?.aucRoc || "Not Available"}
+                      status={
+                        dataToDisplay.metrics?.status?.aucRoc || "Not Available"
+                      }
                       description="Area under ROC curve"
                       infoData={dataToDisplay.metrics}
                     />
@@ -2157,7 +2237,9 @@ const PerformancePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Residual Plot */}
                 <motion.div
-                  whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  whileHover={{
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                  }}
                   transition={{ duration: 0.3 }}
                   className="bg-white rounded-xl p-6 shadow-md border border-gray-100"
                 >
@@ -2171,12 +2253,16 @@ const PerformancePage: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <ResidualPlot residuals={dataToDisplay.residual_analysis.residuals} />
+                  <ResidualPlot
+                    residuals={dataToDisplay.residual_analysis.residuals}
+                  />
                 </motion.div>
-                
+
                 {/* Residual Statistics */}
                 <motion.div
-                  whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  whileHover={{
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                  }}
                   transition={{ duration: 0.3 }}
                   className="bg-white rounded-xl p-6 shadow-md border border-gray-100"
                 >
@@ -2196,7 +2282,9 @@ const PerformancePage: React.FC = () => {
                         Mean Residual
                       </h3>
                       <p className="text-2xl font-bold text-gray-900">
-                        {dataToDisplay.residual_analysis.mean_residual.toFixed(4)}
+                        {dataToDisplay.residual_analysis.mean_residual.toFixed(
+                          4
+                        )}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Ideally close to zero for unbiased models
@@ -2207,7 +2295,9 @@ const PerformancePage: React.FC = () => {
                         Residual Standard Deviation
                       </h3>
                       <p className="text-2xl font-bold text-gray-900">
-                        {dataToDisplay.residual_analysis.std_residual.toFixed(4)}
+                        {dataToDisplay.residual_analysis.std_residual.toFixed(
+                          4
+                        )}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Measure of residual dispersion
@@ -2230,7 +2320,9 @@ const PerformancePage: React.FC = () => {
               <>
                 {/* Confusion Matrix */}
                 <motion.div
-                  whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  whileHover={{
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                  }}
                   transition={{ duration: 0.3 }}
                   className="bg-white rounded-xl p-6 shadow-md border border-gray-100"
                 >
@@ -2243,14 +2335,17 @@ const PerformancePage: React.FC = () => {
                         Model prediction correctness
                       </p>
                     </div>
-      
                   </div>
-                  <ConfusionMatrixChart data={dataToDisplay.confusionMatrix || []} />
+                  <ConfusionMatrixChart
+                    data={dataToDisplay.confusionMatrix || []}
+                  />
                 </motion.div>
 
                 {/* Class Distribution */}
                 <motion.div
-                  whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  whileHover={{
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                  }}
                   transition={{ duration: 0.3 }}
                   className="bg-white rounded-xl p-6 shadow-md border border-gray-100"
                 >
@@ -2267,7 +2362,11 @@ const PerformancePage: React.FC = () => {
                       title="Class Distribution"
                       entityType="chart"
                       entityName="Class Distribution"
-                      data={{ chartData: Object.entries(dataToDisplay.dataInfo?.class_distribution || {}).map(([key, value]) => ({ name: key, value })) }}
+                      data={{
+                        chartData: Object.entries(
+                          dataToDisplay.dataInfo?.class_distribution || {}
+                        ).map(([key, value]) => ({ name: key, value })),
+                      }}
                     />
                   </div>
                   <ClassDistributionChart
@@ -2282,13 +2381,17 @@ const PerformancePage: React.FC = () => {
               {/* ROC Curve - Only show for classification models */}
               {!dataToDisplay.isRegression && (
                 <motion.div
-                  whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  whileHover={{
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                  }}
                   transition={{ duration: 0.3 }}
                   className="bg-white rounded-xl p-6 shadow-md border border-gray-100"
                 >
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900">ROC Curve</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        ROC Curve
+                      </h2>
                       <p className="text-sm text-gray-500">
                         True positive rate vs false positive rate
                       </p>
@@ -2297,8 +2400,8 @@ const PerformancePage: React.FC = () => {
                       title="ROC Curve"
                       entityType="chart"
                       entityName="ROC Curve"
-                      data={{ 
-                        chartData: dataToDisplay.rocCurve || []
+                      data={{
+                        chartData: dataToDisplay.rocCurve || [],
                       }}
                     />
                   </div>
@@ -2308,12 +2411,16 @@ const PerformancePage: React.FC = () => {
                   />
                 </motion.div>
               )}
-              
+
               {/* Learning Curve - Always show */}
               <motion.div
-                whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                whileHover={{
+                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                }}
                 transition={{ duration: 0.3 }}
-                className={`bg-white rounded-xl p-6 shadow-md border border-gray-100 ${dataToDisplay.isRegression ? 'md:col-span-2' : ''}`}
+                className={`bg-white rounded-xl p-6 shadow-md border border-gray-100 ${
+                  dataToDisplay.isRegression ? "md:col-span-2" : ""
+                }`}
               >
                 <div className="flex justify-between items-center mb-6">
                   <div>
@@ -2328,16 +2435,32 @@ const PerformancePage: React.FC = () => {
                     title="Learning Curves"
                     entityType="chart"
                     entityName="Learning Curves"
-                    data={{ 
-                      chartData: (dataToDisplay.learningCurve?.trainSizes || []).map((size, index) => ({
+                    data={{
+                      chartData: (
+                        dataToDisplay.learningCurve?.trainSizes || []
+                      ).map((size, index) => ({
                         size,
-                        trainScore: (dataToDisplay.learningCurve?.trainScores || [])[index] || 0,
-                        testScore: (dataToDisplay.learningCurve?.testScores || [])[index] || 0
-                      }))
+                        trainScore:
+                          (dataToDisplay.learningCurve?.trainScores || [])[
+                            index
+                          ] || 0,
+                        testScore:
+                          (dataToDisplay.learningCurve?.testScores || [])[
+                            index
+                          ] || 0,
+                      })),
                     }}
                   />
                 </div>
-                <LearningCurveChart data={dataToDisplay.learningCurve || { trainSizes: [], trainScores: [], testScores: [] }} />
+                <LearningCurveChart
+                  data={
+                    dataToDisplay.learningCurve || {
+                      trainSizes: [],
+                      trainScores: [],
+                      testScores: [],
+                    }
+                  }
+                />
               </motion.div>
             </div>
 
@@ -2381,7 +2504,9 @@ const PerformancePage: React.FC = () => {
                   </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Folds</h3>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">
+                    Folds
+                  </h3>
                   <p className="text-2xl font-bold text-gray-900 break-words">
                     {dataToDisplay.cross_validation?.scores?.length || 0}
                   </p>
@@ -2408,9 +2533,9 @@ export default PerformancePage;
 // Get status for R² (higher is better)
 const getR2Status = (value: number) => {
   if (value >= 0.95) return "Excellent";
-  if (value >= 0.90) return "Good";
-  if (value >= 0.80) return "Above Target";
-  if (value >= 0.70) return "On Target";
+  if (value >= 0.9) return "Good";
+  if (value >= 0.8) return "Above Target";
+  if (value >= 0.7) return "On Target";
   return "Needs Improvement";
 };
 
@@ -2418,34 +2543,34 @@ const getR2Status = (value: number) => {
 const getErrorMetricStatus = (value: number, metricType: string) => {
   // These thresholds would ideally be dynamic based on the dataset
   // Using placeholder values that should be adjusted for specific use cases
-  
+
   // For MSE
-  if (metricType === 'MSE') {
+  if (metricType === "MSE") {
     if (value < 50) return "Excellent";
     if (value < 100) return "Good";
     if (value < 200) return "Above Target";
     if (value < 400) return "On Target";
     return "Needs Improvement";
   }
-  
+
   // For RMSE
-  if (metricType === 'RMSE') {
+  if (metricType === "RMSE") {
     if (value < 5) return "Excellent";
     if (value < 10) return "Good";
     if (value < 15) return "Above Target";
     if (value < 20) return "On Target";
     return "Needs Improvement";
   }
-  
+
   // For MAE
-  if (metricType === 'MAE') {
+  if (metricType === "MAE") {
     if (value < 4) return "Excellent";
     if (value < 8) return "Good";
     if (value < 12) return "Above Target";
     if (value < 16) return "On Target";
     return "Needs Improvement";
   }
-  
+
   return "Not Available";
 };
 
@@ -2457,28 +2582,32 @@ const ResidualPlot = ({ residuals }: { residuals: number[] }) => (
         title="About Residual Analysis"
         entityType="chart"
         entityName="Residual Analysis"
-        data={{ chartData: residuals.map((residual, index) => ({ index, residual })) }}
+        data={{
+          chartData: residuals.map((residual, index) => ({ index, residual })),
+        }}
       />
     </div>
     <div className="h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart
-          margin={{ top: 20, right: 20, bottom: 30, left: 40 }}
-        >
+        <ScatterChart margin={{ top: 20, right: 20, bottom: 30, left: 40 }}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-          <XAxis 
-            type="number" 
-            dataKey="index" 
-            name="Sample Index" 
-            label={{ value: 'Sample Index', position: 'insideBottomRight', offset: -10 }}
+          <XAxis
+            type="number"
+            dataKey="index"
+            name="Sample Index"
+            label={{
+              value: "Sample Index",
+              position: "insideBottomRight",
+              offset: -10,
+            }}
           />
-          <YAxis 
-            type="number" 
-            dataKey="residual" 
-            name="Residual" 
-            label={{ value: 'Residual', angle: -90, position: 'insideLeft' }}
+          <YAxis
+            type="number"
+            dataKey="residual"
+            name="Residual"
+            label={{ value: "Residual", angle: -90, position: "insideLeft" }}
           />
-          <Tooltip 
+          <Tooltip
             formatter={(value: any) => [value.toFixed(2), "Residual"]}
             labelFormatter={(value) => `Sample: ${value}`}
             contentStyle={{
@@ -2489,9 +2618,9 @@ const ResidualPlot = ({ residuals }: { residuals: number[] }) => (
             }}
           />
           <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-          <Scatter 
-            name="Residuals" 
-            data={residuals.map((residual, index) => ({ index, residual }))} 
+          <Scatter
+            name="Residuals"
+            data={residuals.map((residual, index) => ({ index, residual }))}
             fill="#8884d8"
             opacity={0.6}
           />
