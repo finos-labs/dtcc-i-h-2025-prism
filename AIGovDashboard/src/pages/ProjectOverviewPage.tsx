@@ -355,7 +355,7 @@ const ProjectOverviewPage: React.FC = () => {
     
     try {
       // Only fetch models for now since the dataset endpoint seems to be missing
-      const modelsResponse = await axios.get(`https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/${id}/models/list`, config);
+      const modelsResponse = await axios.get(`http://localhost:8000/ml/${id}/models/list`, config);
       
       setModels(modelsResponse.data);
       
@@ -367,7 +367,7 @@ const ProjectOverviewPage: React.FC = () => {
       // Comment out the datasets fetch until the API endpoint is available
       // Try to fetch datasets separately to avoid Promise.all failing completely
       try {
-        const datasetsResponse = await axios.get(`https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/${id}/datasets/list`, config);
+        const datasetsResponse = await axios.get(`http://localhost:8000/ml/${id}/datasets/list`, config);
         setDatasets(datasetsResponse.data);
       } catch (datasetErr) {
         console.log('Datasets API not available yet:', datasetErr);

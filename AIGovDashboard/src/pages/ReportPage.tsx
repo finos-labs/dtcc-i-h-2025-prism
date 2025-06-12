@@ -386,7 +386,7 @@ const ReportPage: React.FC = () => {
 
       // First API call to generate the report
       const generateResponse = await fetch(
-        `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/${modelData.project_id}/reports/generate?model_id=${modelData.model_id}&dataset_id=${modelData.dataset_id}`,
+        `http://localhost:8000/ml/${modelData.project_id}/reports/generate?model_id=${modelData.model_id}&dataset_id=${modelData.dataset_id}`,
         {
           method: "POST",
           headers: {
@@ -413,7 +413,7 @@ const ReportPage: React.FC = () => {
 
       // Second API call to download the report file after successful generation
       const downloadResponse = await fetch(
-        `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/download/${modelData.project_id}/${modelData.model_id}/${modelData.model_version}`,
+        `http://localhost:8000/ml/download/${modelData.project_id}/${modelData.model_id}/${modelData.model_version}`,
         {
           method: "GET",
           headers: {

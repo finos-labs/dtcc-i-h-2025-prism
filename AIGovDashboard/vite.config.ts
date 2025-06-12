@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, ''),

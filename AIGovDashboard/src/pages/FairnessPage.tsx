@@ -123,7 +123,7 @@ const FairnessPage: React.FC = () => {
           const model_version = modelData[0].model_version;
 
           const response = await axios.get(
-            `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/fairness/${id}/${modelId}/${model_version}`,
+            `http://localhost:8000/ml/fairness/${id}/${modelId}/${model_version}`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,

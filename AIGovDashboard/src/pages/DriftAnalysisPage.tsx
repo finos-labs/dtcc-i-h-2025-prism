@@ -88,7 +88,7 @@ const useDriftAnalysisData = (projectId: string) => {
         // Fetch drift analysis from API
         const accessToken = localStorage.getItem('access_token');
         
-        const apiUrl = `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/drift/${projectId}/${modelId}/${model_version}`;
+        const apiUrl = `http://localhost:8000/ml/drift/${projectId}/${modelId}/${model_version}`;
         
         const response = await fetch(
           apiUrl,

@@ -1281,7 +1281,7 @@ const PerformancePage: React.FC = () => {
           try {
             // Call the performance API with project_id and model_id and include the auth token
             const response = await fetch(
-              `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/performance/${projectId}/${modelId}/${model_version}`,
+              `http://localhost:8000/ml/performance/${projectId}/${modelId}/${model_version}`,
               {
                 method: "GET",
                 headers: {

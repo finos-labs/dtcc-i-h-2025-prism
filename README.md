@@ -16,12 +16,16 @@ Commit Early & Commit Often!!!
 
 ## Project Name
 
+**PRISM** -
 
 ### Project Details
+
+PRISM is an AI-powered solution designed to enhance risk management and governance in financial markets. Our system leverages machine learning algorithms to provide automated risk assessment, real-time monitoring, and intelligent governance frameworks for financial institutions. By combining predictive analytics with smart monitoring capabilities, PRISM empowers organizations to proactively identify, assess, and mitigate potential risks while ensuring regulatory compliance.
 
 
 ### Team Information
 
+Kritin Madhavan (PRISM), Arun Prasad (PRISM), Shiv Mohith S (PRISM), Adithyah Nair (PRISM)
 
 ## Using DCO to sign your commits
 

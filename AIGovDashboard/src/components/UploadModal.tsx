@@ -72,9 +72,9 @@ const UploadModal = ({
   const [selectedProjectName, setSelectedProjectName] = useState("");
 
   // Fix the process.env reference issue
-  const baseUrl = import.meta.env?.VITE_API_BASE_URL || "https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com";
+  const baseUrl = import.meta.env?.VITE_API_BASE_URL || "http://localhost:8000";
   // If you're using Create React App instead of Vite, use this:
-  // const baseUrl = window.env?.REACT_APP_API_BASE_URL || 'https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/api';
+  // const baseUrl = window.env?.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
   // Send a signal to parent component to show animation on the page
   const emitProcessingSignal = (status, data = {}) => {

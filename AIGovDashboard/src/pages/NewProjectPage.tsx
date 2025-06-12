@@ -56,7 +56,7 @@ export default function NewProjectPage() {
       console.log(localStorage.getItem("access_token"));
       // API call to localhost
       const response = await fetch(
-        "https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/projects/create",
+        "http://localhost:8000/projects/create",
         {
           method: "POST",
           headers: {

@@ -82,7 +82,7 @@ const SignupPage: React.FC = () => {
     }
 
     setIsLoading(true);
-    const response2 = await fetch("https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/auth/signin", {
+    const response2 = await fetch("http://localhost:8000/auth/signin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -745,7 +745,7 @@ const SignupPage: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response2 = await fetch("https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/auth/signin", {
+      const response2 = await fetch("http://localhost:8000/auth/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
