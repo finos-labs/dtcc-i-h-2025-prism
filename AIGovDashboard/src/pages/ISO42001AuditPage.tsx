@@ -48,6 +48,26 @@ const ISO42001AuditPage: React.FC = () => {
     try {
       setLoading(true);
 
+      // Check if risk assessment was completed (from ReportPage)
+      const riskAssessmentCompleted = localStorage.getItem("riskassessment") === "true";
+      
+      if (riskAssessmentCompleted) {
+        console.log("Risk assessment completed, auto-completing related subsections");
+        // Auto-complete risk assessment related subsections
+        setAutoSectionsCompleted(
+          new Set([
+            "impact-assessment",
+            "testing-framework",
+            "monitoring-systems",
+            "reporting-mechanisms",
+          ])
+        );
+        // Update completed sections to reflect which main sections have any completed subsections
+        setCompletedSections(new Set([2, 3, 4])); // Risk Assessment, AI System Lifecycle, Performance Monitoring
+        setLoading(false);
+        return;
+      }
+
       // Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
@@ -68,7 +88,7 @@ const ISO42001AuditPage: React.FC = () => {
       try {
         // Try to check for models - if successful, auto-complete certain subsections
         const modelsResponse = await axios.get(
-          `http://localhost:8000/ml/dummy-1/models/list`,
+          `https://prism-backend-dtcc-dot-block-convey-p1.uc.r.appspot.com/ml/dummy-1/models/list`,
           config
         );
 
@@ -132,7 +152,9 @@ const ISO42001AuditPage: React.FC = () => {
   };
 
   const calculateComplianceScore = () => {
-    return Math.round((completedSections.size / 4) * 100);
+    // Calculate based on subsections completed out of total 12 subsections
+    const totalSubsections = 12; // 3 subsections per section × 4 sections
+    return Math.round((autoSectionsCompleted.size / totalSubsections) * 100);
   };
 
   const getProgressColor = (progress: number) => {
@@ -1985,7 +2007,6 @@ IMPORTANT FORMATTING RULES:
 - Each bullet point should be a complete, well-structured sentence or paragraph
 
 Perform COMPREHENSIVE analysis. Read the entire document thoroughly and provide enterprise-grade assessment focusing on development controls depth, completeness, effectiveness, and full alignment with ISO 42001 AI system development requirements.`;
-
       console.log(
         "Starting Gemini API call for Development Controls analysis..."
       );
@@ -3139,14 +3160,14 @@ Perform COMPREHENSIVE analysis. Read the entire document thoroughly and provide 
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold text-gray-900">
-                  {completedSections.size * 25}%
+                  {calculateComplianceScore()}%
                 </span>
                 <div className="w-20 h-2 bg-gray-200 rounded-full">
                   <div
                     className={`h-2 rounded-full ${getProgressColor(
-                      completedSections.size * 25
+                      calculateComplianceScore()
                     )}`}
-                    style={{ width: `${completedSections.size * 25}%` }}
+                    style={{ width: `${calculateComplianceScore()}%` }}
                   ></div>
                 </div>
               </div>
@@ -3168,57 +3189,78 @@ Perform COMPREHENSIVE analysis. Read the entire document thoroughly and provide 
                 </div>
               </div>
               <div className="space-y-2">
-                {autoSectionsCompleted.has("ai-policy-documentation") ||
-                autoSectionsCompleted.has("procedures-guidelines") ||
-                autoSectionsCompleted.has("record-keeping-system") ? (
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-gray-700">
-                      Documentation and Policy Development
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-sm">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-gray-700">
-                      Documentation and Policy Development
-                    </span>
-                  </div>
-                )}
-                {autoSectionsCompleted.has("impact-assessment") ||
-                autoSectionsCompleted.has("risk-mitigation-strategies") ||
-                autoSectionsCompleted.has("incident-response") ? (
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-gray-700">
-                      Risk Assessment and Management
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-sm">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-gray-700">
-                      Risk Assessment and Management
-                    </span>
-                  </div>
-                )}
-                {autoSectionsCompleted.has("development-controls") ||
-                autoSectionsCompleted.has("testing-framework") ||
-                autoSectionsCompleted.has("deployment-procedures") ? (
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-gray-700">
-                      AI System Lifecycle Management
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-sm">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-gray-700">
-                      AI System Lifecycle Management
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const docSubsections = ["ai-policy-documentation", "procedures-guidelines", "record-keeping-system"];
+                  const completedDocSubsections = docSubsections.filter(sub => autoSectionsCompleted.has(sub));
+                  const allDocCompleted = completedDocSubsections.length === docSubsections.length;
+                  const anyDocCompleted = completedDocSubsections.length > 0;
+                  
+                  return (
+                    <div className="flex items-center text-sm">
+                      {allDocCompleted ? (
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                      ) : anyDocCompleted ? (
+                        <div className="w-4 h-4 mr-2 relative">
+                          <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-500 rounded-full"></div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        </div>
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                      )}
+                      <span className="text-gray-700">
+                        Documentation and Policy Development {anyDocCompleted && `(${completedDocSubsections.length}/${docSubsections.length})`}
+                      </span>
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const riskSubsections = ["impact-assessment", "risk-mitigation-strategies", "incident-response"];
+                  const completedRiskSubsections = riskSubsections.filter(sub => autoSectionsCompleted.has(sub));
+                  const allRiskCompleted = completedRiskSubsections.length === riskSubsections.length;
+                  const anyRiskCompleted = completedRiskSubsections.length > 0;
+                  
+                  return (
+                    <div className="flex items-center text-sm">
+                      {allRiskCompleted ? (
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                      ) : anyRiskCompleted ? (
+                        <div className="w-4 h-4 mr-2 relative">
+                          <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-500 rounded-full"></div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        </div>
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                      )}
+                      <span className="text-gray-700">
+                        Risk Assessment and Management {anyRiskCompleted && `(${completedRiskSubsections.length}/${riskSubsections.length})`}
+                      </span>
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const lifecycleSubsections = ["development-controls", "testing-framework", "deployment-procedures"];
+                  const completedLifecycleSubsections = lifecycleSubsections.filter(sub => autoSectionsCompleted.has(sub));
+                  const allLifecycleCompleted = completedLifecycleSubsections.length === lifecycleSubsections.length;
+                  const anyLifecycleCompleted = completedLifecycleSubsections.length > 0;
+                  
+                  return (
+                    <div className="flex items-center text-sm">
+                      {allLifecycleCompleted ? (
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                      ) : anyLifecycleCompleted ? (
+                        <div className="w-4 h-4 mr-2 relative">
+                          <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-500 rounded-full"></div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        </div>
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                      )}
+                      <span className="text-gray-700">
+                        AI System Lifecycle Management {anyLifecycleCompleted && `(${completedLifecycleSubsections.length}/${lifecycleSubsections.length})`}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -3342,3 +3384,4 @@ Perform COMPREHENSIVE analysis. Read the entire document thoroughly and provide 
 };
 
 export default ISO42001AuditPage;
+

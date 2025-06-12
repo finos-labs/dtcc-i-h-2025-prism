@@ -325,6 +325,10 @@ const ReportPage: React.FC = () => {
           message: "AI Risk Assessment report downloaded successfully!",
         });
 
+        // Set riskassessment flag in localStorage for ISO 42001 audit page
+        localStorage.setItem("riskassessment", "true");
+        console.log("Set riskassessment flag in localStorage");
+
         // Show success modal
         setShowSuccessModal(true);
 
